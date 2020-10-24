@@ -79,7 +79,7 @@ bool add_station(vector<station> &station_list){
     if(station_number!=-1){
         bool check = false;
         for(auto it:station_list) 
-            if(it.station_number==station_number && it.is_active==true) {
+            if(it.station_number==station_number) {
                 check=true;
                 it.is_active = true; 
                 break;
@@ -92,6 +92,7 @@ bool add_station(vector<station> &station_list){
             int info_port = 6000+station_number;
             station new_station(station_number,"Station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1,true);
             station_list.push_back(new_station);
+            v[station_number] = false;
         }
         
         return true;
@@ -100,7 +101,7 @@ bool add_station(vector<station> &station_list){
 }
 
 void remove_station(station &station_obj){
-    v[station_obj.station_number] = false;
+    v[station_obj.station_number] = true;
     station_obj.is_active = false;
 }
 
