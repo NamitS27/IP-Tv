@@ -24,7 +24,7 @@ using namespace std;
 
 map<int,bool> v;
 
-void initialize_vector(){
+void initialize_map(){
     for(int i=1;i<=255;i++){
         v[i]=true;
     }
@@ -42,14 +42,18 @@ class station{
         bool is_active;
 
     public:
-        station(int station_number,string station_name, int multicast_address, int data_port,int info_port,int bit_rate,bool is_active) { // Constructor with parameters
+        station(int station_number,string station_name, int multicast_address, int data_port,int info_port,int bit_rate,bool is_active) { 
         this->station_number=station_number;
         this->station_name=station_name;
         this->multicast_address=multicast_address;
         this->data_port=data_port;    
         this->info_port=info_port;
-        this->bit_rate=bit_rate; // https://blog.frame.io/2017/03/06/calculate-video-bitrates/
+        this->bit_rate=bit_rate;
         this->is_active=is_active;
+    }
+
+    string to_str(){
+        return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate) + "|" + to_string(this->is_active);
     }
     
 };
@@ -105,13 +109,14 @@ void remove_station(station &station_obj){
     station_obj.is_active = false;
 }
 
-void fetch_stations(vector<station> station_list){
-    
-    for (auto it : station_list) { 
-        if(it.is_active == true){
-            cout << it.station_number;
-        }
-    }
+string serialize_station_list(vector<station> station_list){
+    string data="";
+    for(auto it:station_list) data += it.to_str() + "||";
+    return data.substr(0,data.size()-2);
+}
+
+void fetch_stations(vector<station> &station_list){
+    for(auto it:station_list) cout << it.to_str() << "\n";
 
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -148,28 +153,21 @@ void fetch_stations(vector<station> station_list){
             exit(EXIT_FAILURE);
         }
 
-        // valread = read(new_socket, &client_request, sizeof(station_list));
-        // printf("%d\n", station_info_req.type);
-        send(new_socket, &station_list, sizeof(station_list), 0);
+        string data = serialize_station_list(station_list);
+        char *send_data;
+        send_data = &data[0];
+        cout << send_data << "\n";
+        send(new_socket, &send_data, sizeof(send_data), 0);
+        cout << "Message Sent\n";
     }
 }
 
-
-// int calculate_bit_rate(string filename){
-    
-//     string filename_we = filename.substr(0,filename.size()-4);
-//     string generate_file = "touch " + filename_we;
-//     const char *command_1 = generate_file.c_str();
-//     system(command_1);
-//     string command = "ffmpeg -i " + filename + filename_we;
-//     const char *command_2 = command.c_str();
-//     system(command_2);
-//     command = "grep \"bitrate\" " + filename_we;
-//     const char *command
-//     int bitrate;
-// }
-
-
 int main(){
+    initialize_map();
+    vector<station> station_list;
 
+    add_station(station_list);
+    add_station(station_list);
+    // for(auto it:station_list) cout << it.to_str() << endl;
+    fetch_stations(station_list);
 }

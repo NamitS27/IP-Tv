@@ -18,6 +18,8 @@
 
 #define TCP_PORT 8080
 
+#define TCP_IP "0.0.0.0"
+
 using namespace std;
 
 class station{
@@ -55,9 +57,32 @@ class channel_info{
 
 int main(){
 
-    int multi_sockfd;
-    struct sockaddr_in servaddr;
-    struct ifreq ifr;
-    char *mcast_addr;
+    int TCP_sockfd = 0, TCP_readsize;
+    struct sockaddr_in TCP_servaddr;
 
+    if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+        exit(1);
+    }
+
+    if (inet_pton(AF_INET, TCP_IP, &TCP_servaddr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n");
+        exit(1);
+    }
+
+    TCP_servaddr.sin_family = AF_INET;
+    TCP_servaddr.sin_port = htons(TCP_PORT);
+
+    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr,
+                sizeof(TCP_servaddr)) < 0) {
+        printf("\nConnection Failed \n");
+        exit(1);
+    }
+    std::string s;
+
+    int n;
+    char buf[256];
+
+    TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf));
+    printf("%s",buf);
 }
