@@ -154,10 +154,12 @@ void fetch_stations(vector<station> &station_list){
         }
 
         string data = serialize_station_list(station_list);
-        char *send_data;
-        send_data = &data[0];
+
+
+
+        char *send_data = &data[0];
         cout << send_data << "\n";
-        send(new_socket, &send_data, sizeof(send_data), 0);
+        send(new_socket, &data[0], data.size(), 0);
         cout << "Message Sent\n";
     }
 }

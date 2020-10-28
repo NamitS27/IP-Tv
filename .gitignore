@@ -1,1 +1,4 @@
 .vscode
+server
+client
+*.exe

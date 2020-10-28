@@ -73,15 +73,14 @@ int main(){
     TCP_servaddr.sin_family = AF_INET;
     TCP_servaddr.sin_port = htons(TCP_PORT);
 
-    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr,
-                sizeof(TCP_servaddr)) < 0) {
+    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr, sizeof(TCP_servaddr)) < 0) {
         printf("\nConnection Failed \n");
         exit(1);
     }
     std::string s;
 
     int n;
-    char buf[256];
+    char buf[256]="";
 
     TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf));
     printf("%s",buf);
