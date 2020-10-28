@@ -58,6 +58,8 @@ class station{
     
 };
 
+vector<station> station_list;
+
 class channel_info{
     private:
         string RADIO;
@@ -77,7 +79,7 @@ int get_free_number(){
 }
 
 
-bool add_station(vector<station> &station_list){
+bool add_station(){
     
     int station_number = get_free_number();
     if(station_number!=-1){
@@ -107,16 +109,27 @@ bool add_station(vector<station> &station_list){
 void remove_station(station &station_obj){
     v[station_obj.station_number] = true;
     station_obj.is_active = false;
+    int ind=0;
+    for(auto i : station_list)
+    {
+        if(i.station_number==station_obj.station_number)
+        {
+            station_list.erase(station_list.begin()+ind);
+            break;
+        }
+        ind++;
+    }
+
 }
 
-string serialize_station_list(vector<station> station_list){
+string serialize_station_list(){
     string data="";
     for(auto it:station_list) data += it.to_str() + "&";
     return data.substr(0,data.size()-1);
 }
 
-void fetch_stations(vector<station> &station_list){
-    for(auto it:station_list) cout << it.to_str() << "\n";
+void* fetch_stations(void* argasdsad){
+    // for(auto it:station_list) cout << it.to_str() << "\n";
 
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -153,23 +166,48 @@ void fetch_stations(vector<station> &station_list){
             exit(EXIT_FAILURE);
         }
 
-        string data = serialize_station_list(station_list);
+        string data = serialize_station_list();
 
-
-
-        char *send_data = &data[0];
-        cout << send_data << "\n";
         send(new_socket, &data[0], data.size(), 0);
-        cout << "Message Sent\n";
     }
 }
 
+void add_remove_stations(){
+
+}
+
+
 int main(){
     initialize_map();
-    vector<station> station_list;
 
-    add_station(station_list);
-    add_station(station_list);
-    // for(auto it:station_list) cout << it.to_str() << endl;
-    fetch_stations(station_list);
+    add_station();
+    add_station();
+
+    pthread_t ptid;
+
+    pthread_create(&ptid,NULL,fetch_stations,NULL);
+    sleep(1);
+    
+    while(true)
+    {
+        
+        cout << "Enter integer : ";
+        int input;
+        cin >> input;
+        if(input==1)                    //Add Station
+        {
+            add_station();
+            cout << "Station created\n";
+        }
+        else{                           //Remove Station
+            cout << "enter station number : ";
+            int opt;
+            cin >> opt;
+            remove_station(station_list[opt-1]);
+            cout << "Station removed\n";
+        }
+    }
+
+    pthread_join(ptid,NULL);    
+    // pthread_exit(NULL);
 }

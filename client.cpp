@@ -20,6 +20,7 @@
 #define TCP_PORT 8080
 
 #define TCP_IP "0.0.0.0"
+#define BUFF_SIZE 10000
 
 using namespace std;
 
@@ -95,17 +96,18 @@ int main(){
     std::string s;
 
     int n;
-    char buf[256]="";
+    char buf[BUFF_SIZE]="";
     string receivedString;
 
     if((TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf))) < 0){
         perror("Failed to read");
         exit(-1);
-    }else{
-
-        receivedString=buf;
-
     }
+    // else{
+
+    receivedString=buf;
+
+    // }
 
     stringstream ss(buf);
     string stationList,stations;
@@ -129,12 +131,12 @@ int main(){
 
     }
 
-    cout << "\n\n\n";
+    // cout << "\n\n\n";
 
-    cout << slist[0].station_number << endl;
-    cout << slist[0].is_active << endl;
-    cout << slist[0].station_name << endl;
-    cout << slist[0].multicast_address << endl;
+    // cout << slist[0].station_number << endl;
+    // cout << slist[0].is_active << endl;
+    // cout << slist[0].station_name << endl;
+    // cout << slist[0].multicast_address << endl;
 
 
 }
