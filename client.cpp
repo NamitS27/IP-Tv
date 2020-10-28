@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <string.h>
 #include <strings.h>
 #include <sys/ioctl.h>
@@ -33,15 +34,29 @@ class station{
         bool is_active;
 
     public:
-        station(int station_number,string station_name, int multicast_address, int data_port,int info_port,int bit_rate,bool is_active) { // Constructor with parameters
-        this->station_number=station_number;
-        this->station_name=station_name;
-        this->multicast_address=multicast_address;
-        this->data_port=data_port;    
-        this->info_port=info_port;
-        this->bit_rate=bit_rate;
-        this->is_active=is_active;
-    }
+        station(char *station_number,char *station_name, char *multicast_address, char *data_port,char *info_port,char *bit_rate, char *is_active) { // Constructor with parameters
+            this->station_number=atoi(station_number);
+            this->station_name=station_name;
+            this->multicast_address=atoi(multicast_address);
+            this->data_port=atoi(data_port);    
+            this->info_port=atoi(info_port);
+            this->bit_rate=atoi(bit_rate);
+            if(is_active=="1"){
+                this->is_active = true;
+            }else{
+                this->is_active = false;
+            }
+        }
+
+        station(vector<string> v1){
+            this->station_number=stoi(v1[0]);
+            this->station_name=v1[1];
+            this->multicast_address=stoi(v1[2]);
+            this->data_port=stoi(v1[3]);    
+            this->info_port=stoi(v1[4]);
+            this->bit_rate=stoi(v1[5]);
+            this->is_active = stoi(v1[6]);
+        }
     
 };
 
@@ -81,7 +96,45 @@ int main(){
 
     int n;
     char buf[256]="";
+    string receivedString;
 
-    TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf));
-    printf("%s",buf);
+    if((TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf))) < 0){
+        perror("Failed to read");
+        exit(-1);
+    }else{
+
+        receivedString=buf;
+
+    }
+
+    stringstream ss(buf);
+    string stationList,stations;
+
+    vector <station> slist;
+
+    while (getline(ss, stationList, '&')){
+
+        stringstream stationListStream(stationList);
+
+        vector <string> v1;
+
+        while(getline(stationListStream, stations, '|')){
+            cout << stations << endl;
+
+            v1.push_back(stations);
+
+        }
+        station new_station(v1);
+        slist.push_back(new_station);
+
+    }
+
+    cout << "\n\n\n";
+
+    cout << slist[0].station_number << endl;
+    cout << slist[0].is_active << endl;
+    cout << slist[0].station_name << endl;
+    cout << slist[0].multicast_address << endl;
+
+
 }

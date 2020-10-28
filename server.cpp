@@ -90,7 +90,7 @@ bool add_station(vector<station> &station_list){
             }
             
         if(!check){
-            string addr = "239.192.1." + to_string(station_number);
+            string addr = "239.192.1." + to_string(station_number); //Why do we need new ip address for each station, can't we just assign it different port ?
             const char *address = addr.c_str();
             int data_port = 5000+station_number;
             int info_port = 6000+station_number;
@@ -111,8 +111,8 @@ void remove_station(station &station_obj){
 
 string serialize_station_list(vector<station> station_list){
     string data="";
-    for(auto it:station_list) data += it.to_str() + "||";
-    return data.substr(0,data.size()-2);
+    for(auto it:station_list) data += it.to_str() + "&";
+    return data.substr(0,data.size()-1);
 }
 
 void fetch_stations(vector<station> &station_list){
