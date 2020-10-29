@@ -32,6 +32,8 @@ class station{
         int data_port;
         int info_port;
         int bit_rate;
+        string video_filename;
+        float video_duration;
 
     public:
         station(int station_number,string station_name, int multicast_address, int data_port,int info_port,int bit_rate) { 
@@ -41,12 +43,59 @@ class station{
         this->data_port=data_port;    
         this->info_port=info_port;
         this->bit_rate=bit_rate;
+        this->video_duration = get_file_duration(station_number,station_name,bit_rate);
+        this->video_filename = station_name+".mp4";
+
     }
 
     string to_str(){
-        return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate);
+        return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate) ;//+ "|" + to_string(this->video_duration) + "|" + this->video_filename;
     }
     
+    float get_file_duration(int station_number,string station_name,int bit_rate){
+        
+        string sys_call = "ffmpeg -i videos/" + station_name + ".mp4 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// > duration" + to_string(station_number) + ".txt";
+        
+        system(sys_call.c_str());
+
+        FILE *media_file;
+        FILE *duration_file;
+
+        string file_name = "videos/" + station_name + ".mp4";
+        string duration_file_name = "duration" + to_string(station_number) + ".txt";
+        
+        media_file = fopen(file_name.c_str(),"re");
+        duration_file = fopen(duration_file_name.c_str(),"re");
+        
+        if(media_file==NULL)
+        {
+            printf("Could not open mediafile!!");
+            exit(1);
+        }
+        if(duration_file==NULL)
+        {
+            printf("Could not open durationfile!!");
+            exit(1);
+        }
+
+        fseek(media_file,0,SEEK_END);
+        int file_size = ftell(media_file);
+        
+
+        char duration[100] = {0};
+        fread(duration,1,100,duration_file);
+        int hour=0,min=0,sec=0;
+        sscanf(duration,"%d:%d:%d",&hour,&min,&sec);
+        cout << hour << ":" << min << ":" << sec << "\n\n";
+        sys_call = "rm " + duration_file_name;
+        
+        fclose(media_file);
+        fclose(duration_file);
+        float total_duration = float(float(file_size)/(3600*hour + 60*min + sec))/bit_rate;
+        system(sys_call.c_str()); 
+        return total_duration;
+    }
+
 };
 
 
@@ -88,6 +137,7 @@ bool add_station(){
         int data_port = 5000+station_number;
         int info_port = 6000+station_number;
         station new_station(station_number,"Station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
+        cout << new_station.video_duration << " " << new_station.video_filename << "\n";
         station_list.push_back(new_station);
         v[station_number] = false;
         return true;
@@ -160,8 +210,8 @@ int main(int argc, char *argv[]){
     
     initialize_map();
 
-    add_station() ? cout << "Station Added Successfull\n" : cout << "Cannot add station!\n";
-    add_station() ? cout << "Station Added Successfull\n" : cout << "Cannot add station!\n";
+    // add_station() ? cout << "Station Added Successfull\n" : cout << "Cannot add station!\n";
+    // add_station() ? cout << "Station Added Successfull\n" : cout << "Cannot add station!\n";
 
     pthread_t ptid;
 
