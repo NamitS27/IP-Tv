@@ -32,34 +32,35 @@ class station{
         int data_port;
         int info_port;
         int bit_rate;
-        bool is_active;
 
     public:
-        station(char *station_number,char *station_name, char *multicast_address, char *data_port,char *info_port,char *bit_rate, char *is_active) { // Constructor with parameters
+        station(char *station_number,char *station_name, char *multicast_address, char *data_port,char *info_port,char *bit_rate) { // Constructor with parameters
             this->station_number=atoi(station_number);
             this->station_name=station_name;
             this->multicast_address=atoi(multicast_address);
             this->data_port=atoi(data_port);    
             this->info_port=atoi(info_port);
             this->bit_rate=atoi(bit_rate);
-            if(is_active=="1"){
-                this->is_active = true;
-            }else{
-                this->is_active = false;
-            }
         }
 
-        station(vector<string> v1){
-            this->station_number=stoi(v1[0]);
-            this->station_name=v1[1];
-            this->multicast_address=stoi(v1[2]);
-            this->data_port=stoi(v1[3]);    
-            this->info_port=stoi(v1[4]);
-            this->bit_rate=stoi(v1[5]);
-            this->is_active = stoi(v1[6]);
+        station(vector<string> astation){
+            this->station_number=stoi(astation[0]);
+            this->station_name=astation[1];
+            this->multicast_address=stoi(astation[2]);
+            this->data_port=stoi(astation[3]);    
+            this->info_port=stoi(astation[4]);
+            this->bit_rate=stoi(astation[5]);
         }
+
+    string to_str(){
+        return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate);
+    }
     
 };
+
+// bool comparator(const station& lhs,const station& rhs){
+//     return lhs.station_number < rhs.station_number;
+// }
 
 class channel_info{
     private:
@@ -73,7 +74,7 @@ class channel_info{
 
 int main(){
 
-    int TCP_sockfd = 0, TCP_readsize;
+    int TCP_sockfd = 0, TCP_read;
     struct sockaddr_in TCP_servaddr;
 
     if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -96,18 +97,15 @@ int main(){
     std::string s;
 
     int n;
-    char buf[BUFF_SIZE]="";
+    char buf[BUFF_SIZE];
     string receivedString;
 
-    if((TCP_readsize = read(TCP_sockfd, &buf, sizeof(buf))) < 0){
+    if((TCP_read = read(TCP_sockfd, &buf, sizeof(buf))) < 0){
         perror("Failed to read");
         exit(-1);
     }
-    // else{
 
-    receivedString=buf;
-
-    // }
+    receivedString = buf;
 
     stringstream ss(buf);
     string stationList,stations;
@@ -118,25 +116,19 @@ int main(){
 
         stringstream stationListStream(stationList);
 
-        vector <string> v1;
+        vector <string> station_attributes;
 
         while(getline(stationListStream, stations, '|')){
-            cout << stations << endl;
-
-            v1.push_back(stations);
-
+            station_attributes.push_back(stations);
         }
-        station new_station(v1);
+        station new_station(station_attributes);
         slist.push_back(new_station);
 
     }
 
-    // cout << "\n\n\n";
-
-    // cout << slist[0].station_number << endl;
-    // cout << slist[0].is_active << endl;
-    // cout << slist[0].station_name << endl;
-    // cout << slist[0].multicast_address << endl;
-
+    sort(slist.begin(),slist.end(),[](const station& lhs,const station& rhs){
+        return lhs.station_number < rhs.station_number;
+    });
+    for(auto itr:slist) cout << itr.to_str() << "\n";
 
 }
