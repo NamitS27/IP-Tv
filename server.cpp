@@ -110,6 +110,19 @@ class channel_info{
         string duration_filename;
 };
 
+typedef struct station_list{
+    uint8_t station_number;
+    char station_name[10];
+    uint32_t multicast_address;
+    uint16_t data_port;
+    uint16_t info_port;
+    uint32_t bit_rate;
+} stats;
+
+typedef struct information{
+
+};
+
 map<int,bool> v;
 vector<station> station_list;
 
@@ -164,6 +177,7 @@ string serialize_station_list(){
     return data.substr(0,data.size()-1);
 }
 
+
 void* fetch_stations(void* input){
     
     int server_fd, new_socket;
@@ -199,7 +213,7 @@ void* fetch_stations(void* input){
             perror("accept");
             exit(EXIT_FAILURE);
         }
-
+        // fill_structure();
         string data = serialize_station_list();
         send(new_socket, &data[0], data.size(), 0);
     }
