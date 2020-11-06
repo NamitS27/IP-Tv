@@ -20,9 +20,27 @@
 #define BIT_RATE4 512
 #define BIT_RATE5 256
 
+#define MAX_STATION_SIZE 300
+
+typedef struct station_list{
+    int station_number;
+    char station_name[255];
+    int multicast_address;
+    int data_port;
+    int info_port;
+    int bit_rate;
+    char video_filename[255];
+    float video_duration;
+} stats;
+
+typedef struct information{
+    int size;
+    stats data[MAX_STATION_SIZE];    
+} inf;
+
+inf parse_input();
+
 using namespace std;
-
-
 
 class station{
     public:
@@ -98,33 +116,34 @@ class station{
 
 };
 
+// class channel_info{
+//     public:
+//         string RADIO;
+//         int MULTI_PORT;
+//         int INFO_PORT;
+//         int BUF_SIZE;
+//         string video_filename;
+//         string duration_filename;
+// };
 
+// typedef struct station_list{
+//     int station_number;
+//     char station_name[255];
+//     int multicast_address;
+//     int data_port;
+//     int info_port;
+//     int bit_rate;
+//     char video_filename[255];
+//     float video_duration;
+// } stats;
 
-class channel_info{
-    public:
-        string RADIO;
-        int MULTI_PORT;
-        int INFO_PORT;
-        int BUF_SIZE;
-        string video_filename;
-        string duration_filename;
-};
-
-typedef struct station_list{
-    uint8_t station_number;
-    char station_name[10];
-    uint32_t multicast_address;
-    uint16_t data_port;
-    uint16_t info_port;
-    uint32_t bit_rate;
-} stats;
-
-typedef struct information{
-
-};
+// typedef struct information{
+//     int size;
+//     stats data[MAX_STATION_SIZE];    
+// };
 
 map<int,bool> v;
-vector<station> station_list;
+vector<station> station_vec;
 
 void initialize_map(){
     for(int i=1;i<=255;i++){
@@ -151,7 +170,7 @@ bool add_station(){
         int info_port = 6000+station_number;
         station new_station(station_number,"Station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
         cout << new_station.video_duration << " " << new_station.video_filename << "\n";
-        station_list.push_back(new_station);
+        station_vec.push_back(new_station);
         v[station_number] = false;
         return true;
     }
@@ -162,9 +181,9 @@ void remove_station(int station_number){
     v[station_number] = true;
     int ind=0;
     
-    for(auto ind_station : station_list) {
+    for(auto ind_station : station_vec) {
         if(ind_station.station_number==station_number) {
-            station_list.erase(station_list.begin()+ind);
+            station_vec.erase(station_vec.begin()+ind);
             break;
         }
         ind++;
@@ -173,7 +192,7 @@ void remove_station(int station_number){
 
 string serialize_station_list(){
     string data="";
-    for(auto it:station_list) data += it.to_str() + "&";
+    for(auto it:station_vec) data += it.to_str() + "&";
     return data.substr(0,data.size()-1);
 }
 
@@ -214,11 +233,37 @@ void* fetch_stations(void* input){
             exit(EXIT_FAILURE);
         }
         // fill_structure();
-        string data = serialize_station_list();
-        send(new_socket, &data[0], data.size(), 0);
+        inf input_data = parse_input();
+        // cout << input_data.data[1].station_number << "\n";
+        // string data = serialize_station_list();
+        send(new_socket, &input_data, sizeof(inf), 0);
     }
     
 }
+
+inf parse_input(){
+    int data_size = station_vec.size();
+    inf input_data;
+    input_data.size = data_size;
+    stats temp_struc;
+    
+    for (int i = 0; i < data_size; i++){
+
+        temp_struc.bit_rate = station_vec[i].bit_rate;
+        temp_struc.data_port = station_vec[i].data_port;
+        strcpy(temp_struc.video_filename,station_vec[i].video_filename.c_str());
+        temp_struc.video_duration = station_vec[i].video_duration;
+        temp_struc.info_port = station_vec[i].info_port;
+        temp_struc.multicast_address = station_vec[i].multicast_address;
+        strcpy(temp_struc.station_name,station_vec[i].station_name.c_str());
+        temp_struc.station_number = station_vec[i].station_number;
+        input_data.data[i] = temp_struc;
+        cout << temp_struc.station_number << " parsed for sending...\n";
+    }
+    
+    return input_data;
+}
+
 
 int main(int argc, char *argv[]){
     
