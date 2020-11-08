@@ -51,7 +51,7 @@ class station{
         int info_port;
         int bit_rate;
         string video_filename;
-        float video_duration;
+        int video_duration;
 
     public:
         station(int station_number,string station_name, int multicast_address, int data_port,int info_port,int bit_rate) { 
@@ -70,7 +70,7 @@ class station{
         return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate) ;//+ "|" + to_string(this->video_duration) + "|" + this->video_filename;
     }
     
-    float get_file_duration(int station_number,string station_name,int bit_rate){
+    int get_file_duration(int station_number,string station_name,int bit_rate){
         
         string sys_call = "ffmpeg -i videos/" + station_name + ".mp4 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// > duration" + to_string(station_number) + ".txt";
         
@@ -109,7 +109,7 @@ class station{
         
         fclose(media_file);
         fclose(duration_file);
-        float total_duration = float(float(file_size)/(3600*hour + 60*min + sec))/bit_rate;
+        int total_duration = ((file_size)/(3600*hour + 60*min + sec))/bit_rate;
         system(sys_call.c_str()); 
         return total_duration;
     }
@@ -241,6 +241,92 @@ void* fetch_stations(void* input){
     
 }
 
+
+void* send_data(void* input){
+    // char radio[17], video_name[200], duration_file_name[100];
+    int multiport, buf_SIZE,infoport,duration,station_number,multicast_address,bit_rate;
+    string videofilename,station_name;
+    
+    multiport = ((station*)input)->multicast_address;
+    infoport = ((station*)input)->info_port;
+    videofilename = ((station*)input)->video_filename;
+    duration = ((station*)input)->video_duration;
+    station_name = ((station*)input)->station_name;
+    station_number = ((station*)input)->station_number;
+    multicast_address = ((station*)input)->multicast_address;
+    bit_rate = ((station*)input)->bit_rate;
+    
+
+    clock_t start, mid, end;
+    double execTime;
+
+
+    /*----------------------    SOCKET MULTI-CAST   --------------------*/
+    int multi_sockfd;
+    struct sockaddr_in servaddr;
+
+    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("server : socket");
+        exit(1);
+    }
+
+    memset((char *)&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = multicast_address;
+    servaddr.sin_port = htons(multiport);
+    /*-------------------------------------------------------------------*/
+
+    /*----------------------  BUFFER DECLARATIONS	 --------------------*/
+    char buffer[bit_rate];
+    int send_status;
+    /*------------------------------------------------------------------*/
+
+    /*----------------------   FILE DECLARATIONS	--------------------*/
+    FILE *mediaFile;
+    int filesize, packet_index, read_size, total_sent;
+    // int packet_index;
+    packet_index = 1;
+    
+    cout << videofilename << "\n";
+    mediaFile = fopen(videofilename.c_str(), "re");
+    
+    execTime = 0;
+    start = clock();
+    while (!feof(mediaFile)) {
+
+        read_size = fread(buffer, 1, bit_rate, mediaFile);
+        total_sent += read_size;
+        printf("Packet Size: = %d\n", read_size);
+
+        if ((send_status = sendto(multi_sockfd, buffer, sizeof(buffer), 0,
+                                  (struct sockaddr *)&servaddr,
+                                  sizeof(servaddr))) == -1) {
+
+            perror("sender: sendto");
+            exit(1);
+        }
+        printf("%d : Packet Number: %i\n", multiport, packet_index);
+        packet_index++;
+        if (packet_index % duration == 0) {
+            mid = clock();
+            execTime = ((double)(mid - start)) / CLOCKS_PER_SEC;
+            execTime = (0.9 - execTime);
+            usleep((int)(execTime * 1000000));
+            // sleep(1);
+            // printf("CURRENT SONG NAME : AVENGERS CLIP\n");
+            // printf("CURRENT TIME : 00: 02 sec\n");
+            // printf("NEXT SONG NAME : NATURALS \n");
+            // delay(400);
+            start = clock();
+        }
+        // delay(5);
+        // usleep(13000);
+    }
+    memset(buffer, 0, sizeof(buffer));
+    close(multi_sockfd);
+    return NULL;
+}
+
 inf parse_input(){
     int data_size = station_vec.size();
     inf input_data;
@@ -258,11 +344,13 @@ inf parse_input(){
         strcpy(temp_struc.station_name,station_vec[i].station_name.c_str());
         temp_struc.station_number = station_vec[i].station_number;
         input_data.data[i] = temp_struc;
-        cout << temp_struc.station_number << " parsed for sending...\n";
+        // cout << temp_struc.station_number << " parsed for sending...\n";
     }
     
     return input_data;
 }
+
+
 
 
 int main(int argc, char *argv[]){
@@ -284,13 +372,19 @@ int main(int argc, char *argv[]){
         cin >> input;   
         if(input==1)                    
             add_station() ? cout << "Station Added Successfully\n" : cout << "Cannot add the station!\n";
-        else if(input==2){                           
+        else if(input==2) {                           
             cout << "Enter station number for removing: ";
             int remove_station_number;
             cin >> remove_station_number;
             remove_station(remove_station_number);
             cout << "Station removed\n";
         } 
+        else if(input==3)
+        {
+            pthread_t udpid;
+            pthread_create(&udpid,NULL,send_data,(void *)&station_vec[0]);
+            sleep(0.5);
+        }
         else break;
     }
 

@@ -39,8 +39,9 @@ typedef struct information{
 
 station_information infos;
 
+
 int main(){
-    printf("What are you doing step brother 0W0 ?");
+    
     int TCP_sockfd = 0, TCP_read;
     struct sockaddr_in TCP_servaddr;
     if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -63,24 +64,139 @@ int main(){
         printf("\nConnection Failed \n");
         exit(1);
     }
-
-    // char buf[BUFF_SIZE];
-
     
     if((TCP_read = read(TCP_sockfd, &infos, sizeof(station_information))) < 0){
         perror("Failed to read");
         exit(-1);
     }
     
+    for (int i = 0; i < infos.size; i++)
+    {
+        printf("--------------------------------------------------\n");
+        printf("Station number : %d\n",infos.data[i].station_number);
+        printf("Station name : %s\n",infos.data[i].station_name);
+        printf("Multicast_address : %d\n",infos.data[i].multicast_address);
+        printf("Video filename : %s\n",infos.data[i].video_filename);
+        printf("--------------------------------------------------\n");
+    }
+    
+    /*
     printf("%d\n",infos.size);
     for(int i=0;i<infos.size;i++){
         printf("%s\n", infos.data[i].station_name);
         printf("%d\n", infos.data[i].station_number);
     }
 
-    // printf("Hey now brown cow\n");
-
+     printf("Hey now brown cow\n");
+    
     /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
+    /*
+    printf("%d\n",infos.size);
+    for(int i=0;i<infos.size;i++){
+        printf("%s\n", infos.data[i].station_name);
+        printf("%d\n", infos.data[i].station_number);
+    }
+
+     printf("Hey now brown cow\n");
+    
     receivedString = buf;
 
     stringstream ss(buf);
