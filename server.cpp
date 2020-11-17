@@ -172,6 +172,7 @@ bool add_station(){
         cout << new_station.video_duration << " " << new_station.video_filename << "\n";
         station_vec.push_back(new_station);
         v[station_number] = false;
+        // pthread_create()
         return true;
     }
     return false;
@@ -247,7 +248,7 @@ void* send_data(void* input){
     int multiport, buf_SIZE,infoport,duration,station_number,multicast_address,bit_rate;
     string videofilename,station_name;
     
-    multiport = ((station*)input)->multicast_address;
+    multiport = ((station*)input)->data_port;
     infoport = ((station*)input)->info_port;
     videofilename = ((station*)input)->video_filename;
     duration = ((station*)input)->video_duration;
@@ -274,17 +275,12 @@ void* send_data(void* input){
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = multicast_address;
     servaddr.sin_port = htons(multiport);
-    /*-------------------------------------------------------------------*/
-
-    /*----------------------  BUFFER DECLARATIONS	 --------------------*/
+    
     char buffer[bit_rate];
     int send_status;
-    /*------------------------------------------------------------------*/
-
-    /*----------------------   FILE DECLARATIONS	--------------------*/
+    
     FILE *mediaFile;
     int filesize, packet_index, read_size, total_sent;
-    // int packet_index;
     packet_index = 1;
     
     cout << videofilename << "\n";
@@ -312,15 +308,9 @@ void* send_data(void* input){
             execTime = ((double)(mid - start)) / CLOCKS_PER_SEC;
             execTime = (0.9 - execTime);
             usleep((int)(execTime * 1000000));
-            // sleep(1);
-            // printf("CURRENT SONG NAME : AVENGERS CLIP\n");
-            // printf("CURRENT TIME : 00: 02 sec\n");
-            // printf("NEXT SONG NAME : NATURALS \n");
-            // delay(400);
+        
             start = clock();
         }
-        // delay(5);
-        // usleep(13000);
     }
     memset(buffer, 0, sizeof(buffer));
     close(multi_sockfd);
