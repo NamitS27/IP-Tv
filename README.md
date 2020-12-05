@@ -4,8 +4,12 @@ In this repository, we have worked over a transferring video using TCP and UDP p
 We have used TCP protocol to transfer the details about different channels while the actual video transfer happens over UDP to simulate live video transfer.
 
 ### Requirements
-- The file tree should consists of a folder name **videos** in which there should be files named : Station**i**.mp4 where $i \geq 1$ and should be an integer value.
-- Change the path in client.c @line #81 to your respective path. 
+- The file tree should consists of a folder name **videos** in which there should be files named : Station**i**.mp4 where i >= 1 and should be an integer value.
+- Change the path in *client.c* @line #81 to your respective path. 
+- For all the videos in the **videos** folder, run the following command so that the videos get converted to streamable videos.
+    ```bash
+    ffmpeg -i Stationi.mp4 -f mpegts stationi.mp4
+   ```
 
 
 ### Installing dependencies
@@ -48,4 +52,4 @@ gcc -o client client.c `pkg-config --libs gtk+-2.0 libvlc` `pkg-config --cflags 
 ```bash
 sudo ./client
 ```
-$\boxed{\text{Note : Here sudo is required in order to work with multicasting}}$
+> Note : Here sudo is required in order to work with the multicasting.

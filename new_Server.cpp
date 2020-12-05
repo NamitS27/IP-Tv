@@ -1,3 +1,5 @@
+//Server side program
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -12,17 +14,20 @@
 #include <unistd.h>
 #include <bits/stdc++.h>
 
-#define TCP_PORT 8080
+#define TCP_PORT 8080       // Initial communication happens at this port
+#define TCP_PORT2 8081      // Information about removed channels is communicated through this port 
+#define BIT_RATE1 4096      // Transmission of all channel data happens at the rate of 4kbps
+#define TCP_IP "127.0.0.1"
 
-#define BIT_RATE1 4096 
-#define BIT_RATE2 2048
-#define BIT_RATE3 1024
-#define BIT_RATE4 512
-#define BIT_RATE5 256
 
-#define MAX_STATION_SIZE 300
+#define MAX_STATION_SIZE 30
 
-typedef struct station_list{
+// Prototype for a function as the rest are declared in relevent order
+
+void station_remove_req(int station_removed);
+
+typedef struct station_list         // Secondary DS for storing information about each channel/station
+{
     int station_number;
     char station_name[255];
     int multicast_address;
@@ -33,7 +38,7 @@ typedef struct station_list{
     float video_duration;
 } stats;
 
-typedef struct information{
+typedef struct information{         // structure carrying info about all channels for initial stage
     int size;
     stats data[MAX_STATION_SIZE];    
 } inf;
@@ -42,7 +47,7 @@ inf parse_input();
 
 using namespace std;
 
-class station{
+class station{                  // main class having info about each station/channel
     public:
         int station_number;
         string station_name;
@@ -70,12 +75,10 @@ class station{
         return to_string(this->station_number) + "|" + this->station_name + "|" + to_string(this->multicast_address) + "|" + to_string(this->data_port) + "|" + to_string(this->info_port) + "|" + to_string(this->bit_rate) ;//+ "|" + to_string(this->video_duration) + "|" + this->video_filename;
     }
     
+    // calculates duration of each video file
     int get_file_duration(int station_number,string station_name,int bit_rate){
 
         string station_name_conv = station_name;
-        // station_name[0] = toupper(station_name[0]);
-        // string convert_video_to_streamable = "ffmpeg -i videos/" + station_name + ".mp4 -f mpegts videos/" + station_name_conv + ".mp4";
-        // system(convert_video_to_streamable.c_str());
 
         string sys_call = "ffmpeg -i videos/" + station_name_conv + ".mp4 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// > duration" + to_string(station_number) + ".txt";
         system(sys_call.c_str());
@@ -101,9 +104,8 @@ class station{
         }
 
         fseek(media_file,0,SEEK_END);
-        int file_size = ftell(media_file);
-        
-
+        int file_size = ftell(media_file); // end of file contains size of file
+        // converting time
         char duration[100] = {0};
         fread(duration,1,100,duration_file);
         int hour=0,min=0,sec=0;
@@ -165,9 +167,42 @@ void remove_station(int station_number){
         }
         ind++;
     }
+    station_remove_req(station_number);
 }
 
+void station_remove_req(int station_removed)
+{
+    int TCP_sockfd = 0, TCP_read;
+    struct sockaddr_in TCP_servaddr;
+    if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Socket creation error \n");
+        exit(1);
+    }
+    printf("Socket Created!\n");
 
+    if (inet_pton(AF_INET, "127.0.0.1", &TCP_servaddr.sin_addr) <= 0)
+    {
+        printf("\nInvalid address/ Address not supported \n");
+        exit(1);
+    }
+
+    // printf("IP Checked!!\n");
+    TCP_servaddr.sin_family = AF_INET;
+    TCP_servaddr.sin_addr.s_addr = INADDR_ANY;
+    TCP_servaddr.sin_port = htons(TCP_PORT2);
+
+    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr, sizeof(TCP_servaddr)) < 0)
+    {
+        printf("\nConnection Failed \n");
+        exit(1);
+    }
+    
+    send(TCP_sockfd, &station_removed, sizeof(int),0);
+    close(TCP_sockfd);
+}
+
+// This function is used to send details about the available channels ov
 void* fetch_stations(void* input){
     
     int server_fd, new_socket;
@@ -273,8 +308,13 @@ void* send_data(void* input){
             start = clock();
         }
     }
+
+    // Sending a end frame such that client gets an idea of the end of the file.
     memset(buffer, 0, sizeof(buffer));
-    close(multi_sockfd);
+    strcpy(buffer,"end");
+    sendto(multi_sockfd, buffer, sizeof(buffer), 0,(struct sockaddr *)&servaddr,sizeof(servaddr));
+    memset(buffer, 0, sizeof(buffer));
+    close(multi_sockfd); // close the socket
     return NULL;
 }
 
@@ -302,11 +342,11 @@ inf parse_input(){
 
 int main(int argc, char *argv[]){
     
-    initialize_map();
+    initialize_map(); // initialising the map which helps in finding the station which are not yet used
 
     pthread_t ptid;
 
-    pthread_create(&ptid,NULL,fetch_stations,NULL);
+    pthread_create(&ptid,NULL,fetch_stations,NULL); // thread for sending the station details
     sleep(0.5);
     
     while(true)
@@ -314,11 +354,11 @@ int main(int argc, char *argv[]){
         cout << "\n1. Add Station \n2. Remove Station\n3. Exit\n\nEnter your choice: ";
         int input;
         cin >> input;   
-        if(input==1){                    
+        if(input==1){    // Add a new station                
             int stat_number = add_station();
-            stat_number > 0 ? cout << "Station Added Successfully\n" : cout << "Cannot add the station!\n";
+            stat_number > 0 ? cout << "Station Added Successfully\n" : cout << "Cannot add the station!\n"; // check if the station is added successfully or not.
             int ind = -1;
-            cout << stat_number << "\n";
+            // cout << stat_number << "\n";
             for(int i=0;i<station_vec.size();i++){
                 if(stat_number==station_vec[i].station_number){
                     ind = i;
@@ -326,6 +366,8 @@ int main(int argc, char *argv[]){
                 } 
             }
             cout << ind << endl;
+            
+            // start the video transmission of the respective station
             pthread_t udpid;
             pthread_create(&udpid,NULL,send_data,(void *)&station_vec[ind]);
             sleep(1);
@@ -334,7 +376,7 @@ int main(int argc, char *argv[]){
             cout << "Enter station number for removing: ";
             int remove_station_number;
             cin >> remove_station_number;
-            remove_station(remove_station_number);
+            remove_station(remove_station_number); // remove the station as per the station number provided by the user
             cout << "Station removed\n";
         } 
         else exit(1);
