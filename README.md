@@ -36,7 +36,7 @@ sudo apt install libvlc-dev
 
 ### Compiling server side
 ```bash
-g++ server.cpp -o server -lpthread
+g++ new_Server.cpp -o server -lpthread
 ```
 ### Compiling client side
 ```bash

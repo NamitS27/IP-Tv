@@ -32,7 +32,6 @@ void player_widget_on_realize(GtkWidget *widget, gpointer data);
 void open_media(const char *uri);
 void play(void);
 void pause_player(void);
-void on_playpause(GtkWidget *widget, gpointer data);
 void on_stop(GtkWidget *widget, gpointer data);
 
 libvlc_media_player_t *media_player;
@@ -60,21 +59,9 @@ typedef struct information{
 station_information infos;
 int current_radio_channel;
 int flag;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int multi_sockfd[MAX_STATION_SIZE];
 int recieving[MAX_STATION_SIZE];
 
-
-void delay(int milliseconds)
-{
-    long pause;
-    clock_t now, then;
-
-    pause = milliseconds * (CLOCKS_PER_SEC / 1000);
-    now = then = clock();
-    while ((now - then) < pause)
-        now = clock();
-}
 
 /* GTK(GUI) related functions are declared below */
 
@@ -153,10 +140,8 @@ void *play_channel(void *input)
     printf("Info Port : %d\n", info_port);
     printf("Bit Rate : %d\n", bit_rate);
 
-    // printf("DATA received: %d\n", data_received);
-
     /*----------------------    SOCKET MULTI-CAST   --------------------*/
-    // int multi_sockfd;
+    
     struct sockaddr_in servaddr;
     struct ip_mreq mcastjoin_req;      /* multicast join struct */
 
@@ -197,7 +182,6 @@ void *play_channel(void *input)
 
     /*----------------------    FILE DECLARATIONS   -------------------*/
     FILE *mediaFile;
-    // printf("Filename : %s",fname);
     /* Opening the file in the write mode */
     mediaFile = fopen(fname, "w");
 
@@ -231,7 +215,7 @@ void *play_channel(void *input)
             // libvlc_media_player_stop(media_player);
         }
         /* For debugging purposes */
-        printf("DATA : %d\n",recieve_size);
+        // printf("DATA : %d\n",recieve_size);
         // writing file data in designated media file
         fwrite(buffer, 1, recieve_size, mediaFile);
     }
@@ -299,11 +283,11 @@ void get_station_list(gpointer data)
         snprintf(sta_num, sizeof(sta_num), "%d", infos.data[i].station_number);
         char sta_add[10];
         snprintf(sta_add, sizeof(sta_add), "%d", infos.data[i].multicast_address);
-        // char *sta_name = &infos.data[i].station_name[0];
+        
 
         send_data[i][0] = sta_num;
         send_data[i][1] = infos.data[i].station_name;
-        // send_data[i][2] = sta_add;
+        
 
         /* Appending the data rows to the table */
         gtk_clist_append((GtkCList *)data, send_data[i]);
@@ -356,18 +340,13 @@ void *check_channel(void *input){
         }
         // Upon receiving which channel has been deleted, we change the value to 0 in this array to indicate it has been disabled
         recieving[input_data] = 0;
-        // string str = "rm station" + input_data + ".mp4";
-        // system(str.c_str());
+        
     }
     close(new_socket);
 }
 
 // callback function when user selects a station/channel from the list
 void choose_station(GtkWidget * clist, gint row, gint column,GdkEventButton * event, gpointer data) {
-    // gtk_clist_get_text(GTK_CLIST(clist), row, column, &text);
-    // gchar *text;
-    // gtk_clist_get_text(GTK_CLIST(clist), row, 2, &text);
-    // g_print("IP address is %d\n\n", row);
 
     // separate thread for processing further steps
     pthread_t my_radio_channel;
@@ -397,27 +376,6 @@ void choose_station(GtkWidget * clist, gint row, gint column,GdkEventButton * ev
 
     /* Check whether the video of the station has been received previously or not */
     recieving[ind_station->station_number]==0 ? pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station) : pthread_create(&my_radio_channel, NULL, on_open, (void *)fname);
-    // pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station);
-    // pthread_join(my_radio_channel,NULL);
-    // printf("%ld\n",my_radio_channel);
-}
-
-void on_playpause(GtkWidget * widget, gpointer data){
-    if (libvlc_media_player_is_playing(media_player) == 1){
-        // pause_flag = 1;
-        pause_player();
-    }
-    else{
-        // pause_flag = 0;
-        flag = 0;
-        pthread_t my_radio_channel;
-        struct station_list *station = (struct station_list *)malloc(sizeof(struct station_list));
-        station->multicast_address = infos.data[current_radio_channel].multicast_address;
-        station->data_port = infos.data[current_radio_channel].data_port;
-        station->info_port = infos.data[current_radio_channel].info_port;
-        station->bit_rate = infos.data[current_radio_channel].bit_rate;
-        pthread_create(&my_radio_channel, NULL, play_channel, (void *)station);
-    }
 }
 
 int main(int argc, gchar *argv[])
@@ -455,24 +413,24 @@ int main(int argc, gchar *argv[])
 
     scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
-    // gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window),700);
+    
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
     gtk_widget_show(scrolled_window);
+    
     // table containing channel list 
     clist = gtk_clist_new_with_titles(2, titles);
 
     gtk_clist_set_column_width(GTK_CLIST(clist), 0, 450);
     gtk_clist_set_column_width(GTK_CLIST(clist), 1, 450);
-    // gtk_clist_set_column_width(GTK_CLIST(clist), 2, 380);
+    
 
-    // gtk_clist_set_row_height(GTK_CLIST(clist),100);
     /* Connecting the function with on click on the row of the table */
     gtk_signal_connect(GTK_OBJECT(clist), "select_row",GTK_SIGNAL_FUNC(choose_station), NULL);
 
     gtk_clist_set_shadow_type(GTK_CLIST(clist), GTK_SHADOW_OUT);
 
     gtk_container_add(GTK_CONTAINER(scrolled_window), clist);
-    // get_station_list((gpointer)clist);
+    
     gtk_widget_show(clist);
     hbox = gtk_hbox_new(FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
@@ -496,16 +454,14 @@ int main(int argc, gchar *argv[])
     player_widget = gtk_drawing_area_new();
     gtk_box_pack_start(GTK_BOX(vbox), player_widget, TRUE, TRUE, 0);
 
-    // playpause_button = gtk_button_new_with_label("gtk-media-play");
-    // gtk_button_set_use_stock(GTK_BUTTON(playpause_button), TRUE);
+    
     stop_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
-    // g_signal_connect(playpause_button, "clicked", G_CALLBACK(on_playpause),NULL);
     /* Connecting function for stoping the player with the stop button */
     g_signal_connect(stop_button, "clicked", G_CALLBACK(on_stop),NULL);
     hbuttonbox = gtk_hbutton_box_new();
     gtk_container_set_border_width(GTK_CONTAINER(hbuttonbox), BORDER_WIDTH);
     gtk_button_box_set_layout(GTK_BUTTON_BOX(hbuttonbox), GTK_BUTTONBOX_START);
-    // gtk_box_pack_start(GTK_BOX(hbuttonbox), playpause_button, FALSE, FALSE, 0);
+    
     gtk_box_pack_start(GTK_BOX(hbuttonbox), stop_button, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbuttonbox, FALSE, FALSE, 0);
 

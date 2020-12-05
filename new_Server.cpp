@@ -111,7 +111,7 @@ class station{                  // main class having info about each station/cha
         fread(duration,1,100,duration_file);
         int hour=0,min=0,sec=0;
         sscanf(duration,"%d:%d:%d",&hour,&min,&sec);
-        cout << hour << ":" << min << ":" << sec << "\n\n";
+        // cout << hour << ":" << min << ":" << sec << "\n\n";
         sys_call = "rm " + duration_file_name;
         
         fclose(media_file);
@@ -312,7 +312,7 @@ void* send_data(void* input){
             exit(1);
         }
         // printf("%d : Packet Number: %i Multicast_address : %d\n", multiport, packet_index,multicast_address);
-        // following variable is just for knowing which packets are getting sent
+        
         packet_index++;
         if (packet_index % duration == 0) {
             mid = clock();
@@ -375,14 +375,13 @@ int main(int argc, char *argv[]){
             int stat_number = add_station();
             stat_number > 0 ? cout << "Station Added Successfully\n" : cout << "Cannot add the station!\n"; // check if the station is added successfully or not.
             int ind = -1;
-            // cout << stat_number << "\n";
             for(int i=0;i<station_vec.size();i++){
                 if(stat_number==station_vec[i].station_number){
                     ind = i;
                     break;
                 } 
             }
-            cout << ind << endl;
+            // cout << ind << endl;
             
             // start the video transmission of the respective station
             pthread_t udpid;
