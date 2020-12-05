@@ -20,7 +20,7 @@
 #define TCP_PORT 8080
 #define TCP_IP "127.0.0.1"
 #define BUFF_SIZE 10000
-#define IF_NAME "enp1s0"
+#define IF_NAME "ens33"
 #define MAX_STATION_SIZE 300
 #define BORDER_WIDTH 6
 
@@ -76,9 +76,12 @@ void player_widget_on_realize(GtkWidget *widget, gpointer data) {
         media_player, GDK_WINDOW_XID(gtk_widget_get_window(widget)));
 }
 
-void *on_open() {
+void *on_open(void *input) {
     usleep(5000000);
-    open_media("file:///media/mrj35/Data/Academics/ICT-Sem5/CN_Lab/Project/Internet-Tv/output.mp4");
+    char path[100] = "file:///home/namit27/Documents/Internet-Tv/";
+    strcat(path,(char *)input);
+    // printf("%s\n\n",path);
+    open_media(path);
 }
 
 void open_media(const char *uri) {
@@ -114,7 +117,10 @@ void *play_channel(void *input){
     int data_port = ((struct station_list *)input)->data_port;
     int info_port = ((struct station_list *)input)->info_port;
     int bit_rate = ((struct station_list *)input)->bit_rate;
-
+    char fname[20];
+    strncpy(fname,((struct station_list *)input)->station_name,sizeof(((struct station_list *)input)->station_name));
+    strcat(fname,".mp4");
+    printf("File : %s\n",fname);
     printf("Multi-cast adrress : %d\n", multicast_address);
     printf("Data Port : %d\n", data_port);
     printf("Info Port : %d\n", info_port);
@@ -140,11 +146,10 @@ void *play_channel(void *input){
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(data_port);
-    // printf("PORT no : %d\n",data_port);
+
     if(bind(multi_sockfd,(struct sockaddr*) &servaddr,sizeof(servaddr))<0)
     {
         perror("Receiver: bind()");
-        // exit(1);
     }
 
     mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
@@ -153,42 +158,7 @@ void *play_channel(void *input){
     if(setsockopt(multi_sockfd,IPPROTO_IP,IP_ADD_MEMBERSHIP,(void *)&mcastjoin_req,sizeof(mcastjoin_req))<0)
     {
         perror("Receiver: setsockopt()");
-        // exit(1);
     }
-
-    // memset(&ifr, 0, sizeof(ifr));
-    // strncpy(ifr.ifr_name, IF_NAME, sizeof(IF_NAME) - 1);
-
-    // if (setsockopt(multi_sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-    //                sizeof(opt))) {
-    //     perror("setsockopt");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // int ret;
-    // if ((ret = setsockopt(multi_sockfd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr,
-    //                 sizeof(ifr))) < 0) {
-    //     perror("Receiver: setsockopt() error");
-    //     printf("RET : %d\n",ret);
-    //     close(multi_sockfd);
-    //     exit(1);
-    // }
-
-    // if ((bind(multi_sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) <0) {
-    //     perror("Receiver: bind()");
-    //     exit(1);
-    // }
-
-    // mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
-    // mcastjoin_req.imr_interface.s_addr = htonl(INADDR_ANY);
-    
-    // if ((ret = setsockopt(multi_sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-    //                 (void *)&mcastjoin_req, sizeof(mcastjoin_req))) < 0) {
-    //     perror("mcast join receive: setsockopt()");
-        
-    //     exit(1);
-    // }
-    // /*-----------------------------------------------------------------*/
 
     // /*----------------------    BUFFER DECLAARATIONS ------------------*/
     char buffer[bit_rate];
@@ -198,7 +168,8 @@ void *play_channel(void *input){
     // /*----------------------    FILE DECLARATIONS   -------------------*/
     FILE *mediaFile;
     char outputarray[bit_rate];
-    mediaFile = fopen("output.mp4", "w");
+    printf("Filename : %s",fname);
+    mediaFile = fopen(fname, "w");
 
     if (mediaFile == NULL) {
         printf("Error has occurred. Image file could not be opened\n");
@@ -206,7 +177,7 @@ void *play_channel(void *input){
     }
 
     pthread_t vlc;
-    pthread_create(&vlc, NULL, on_open, NULL);
+    pthread_create(&vlc, NULL, on_open, (void *)fname);
 
     /*-----------------------------------------------------------------*/
     printf("\nReady to listen!\n\n");
@@ -214,26 +185,17 @@ void *play_channel(void *input){
     pause_flag = 0;
 
     while (flag) {
-    //     printf("Hello\n");
         if (pause_flag == 0) {
-    //         printf("Here\n");
-            memset(&mcast_servaddr, 0, sizeof(mcast_servaddr));
-            mcast_servaddr_len = sizeof(mcast_servaddr);
-            // memset(buffer, '\0', bit_rate);
-            // delay(1);
             memset(buffer, 0, sizeof(buffer));
             if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL,0)) < 0) {
                 perror("receiver: recvfrom()");
-                // exit(TRUE);
             }
             printf("DATA: %d\n",recieve_size);
             fwrite(buffer, 1, recieve_size, mediaFile);
-    //         // printf("DATA: %s\n",buffer);
             if (recieve_size < bit_rate) {
                 flag = 0;
             }
         }
-        // flag = 0;
     }
     fclose(mediaFile);
     close(multi_sockfd);
@@ -296,15 +258,6 @@ void get_station_list(gpointer data){
     }
     
     close(TCP_sockfd);
-
-    for (int i = 0; i < infos.size; i++)
-    {
-        printf("%d) %s\n",infos.data[i].station_number,infos.data[i].station_name);
-    }
-    printf("-----------------------------------------------------------------------\n");
-    // printf("Select your channel : ");
-    // int channel_number;
-    // scanf("%d",&channel_number);
 }
 
 void choose_station(GtkWidget *clist, gint row, gint column,
@@ -329,12 +282,12 @@ void choose_station(GtkWidget *clist, gint row, gint column,
 
     current_radio_channel = row;
     printf("---------------------------------------------------\n");
-    printf("Station name : %s",ind_station->station_name);
-    printf("Station name : %d",ind_station->station_number);
-    printf("Data port : %d",ind_station->data_port);
-    printf("Info port : %d",ind_station->info_port);
-    printf("Bit rate : %d",ind_station->bit_rate);
-    printf("Multicast address : %d",ind_station->multicast_address);
+    printf("Station name : %s\n",ind_station->station_name);
+    printf("Station number : %d\n",ind_station->station_number);
+    printf("Data port : %d\n",ind_station->data_port);
+    printf("Info port : %d\n",ind_station->info_port);
+    printf("Bit rate : %d\n",ind_station->bit_rate);
+    printf("Multicast address : %d\n",ind_station->multicast_address);
     printf("-----------------------------------------------------\n");
     pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station);
 }

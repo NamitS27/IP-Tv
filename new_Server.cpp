@@ -116,32 +116,6 @@ class station{
 
 };
 
-// class channel_info{
-//     public:
-//         string RADIO;
-//         int MULTI_PORT;
-//         int INFO_PORT;
-//         int BUF_SIZE;
-//         string video_filename;
-//         string duration_filename;
-// };
-
-// typedef struct station_list{
-//     int station_number;
-//     char station_name[255];
-//     int multicast_address;
-//     int data_port;
-//     int info_port;
-//     int bit_rate;
-//     char video_filename[255];
-//     float video_duration;
-// } stats;
-
-// typedef struct information{
-//     int size;
-//     stats data[MAX_STATION_SIZE];    
-// };
-
 map<int,bool> v;
 vector<station> station_vec;
 
@@ -169,10 +143,8 @@ int add_station(){
         int data_port = 7000+station_number;
         int info_port = 8010+station_number;
         station new_station(station_number,"station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
-        // cout << new_station.video_duration << " " << new_station.video_filename << "\n";
         station_vec.push_back(new_station);
         v[station_number] = false;
-        // pthread_create()
         return station_number;
     }
     return -1;
@@ -190,12 +162,6 @@ void remove_station(int station_number){
         ind++;
     }
 }
-
-// string serialize_station_list(){
-//     string data="";
-//     for(auto it:station_vec) data += it.to_str() + "&";
-//     return data.substr(0,data.size()-1);
-// }
 
 
 void* fetch_stations(void* input){
@@ -279,9 +245,7 @@ void* send_data(void* input){
     int filesize, packet_index, read_size, total_sent;
     packet_index = 1;
     
-    cout << videofilename << "\n";
     mediaFile = fopen(videofilename.c_str(), "re");
-    cout << "Here" << endl;
     execTime = 0;
     start = clock();
     while (!feof(mediaFile)) {
@@ -331,9 +295,6 @@ inf parse_input(){
     
     return input_data;
 }
-
-
-
 
 int main(int argc, char *argv[]){
     
