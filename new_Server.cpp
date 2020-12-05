@@ -105,7 +105,8 @@ class station{                  // main class having info about each station/cha
 
         fseek(media_file,0,SEEK_END);
         int file_size = ftell(media_file); // end of file contains size of file
-        // converting time
+        
+        // converting time into required format
         char duration[100] = {0};
         fread(duration,1,100,duration_file);
         int hour=0,min=0,sec=0;
@@ -125,13 +126,14 @@ class station{                  // main class having info about each station/cha
 map<int,bool> v;
 vector<station> station_vec;
 
+/* Initialising the map in order to check for the free stations */
 void initialize_map(){
     for(int i=1;i<=255;i++){
         v[i]=true;
     }
 }
 
-
+// gets the first unused station number at a given instant
 int get_free_number(){
     for(auto it:v){
         if(it.second) return it.first;
@@ -139,7 +141,7 @@ int get_free_number(){
     return -1;
 }
 
-
+// adds channel to the channel pool
 int add_station(){
     
     int station_number = get_free_number();
@@ -149,6 +151,7 @@ int add_station(){
         int data_port = 7000+station_number;
         int info_port = 8010+station_number;
         station new_station(station_number,"station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
+        /* Adding new station to the channel pool */
         station_vec.push_back(new_station);
         v[station_number] = false;
         return station_number;
@@ -156,6 +159,7 @@ int add_station(){
     return -1;
 }
 
+// removes channel from the channel pool
 void remove_station(int station_number){
     v[station_number] = true;
     int ind=0;
@@ -170,10 +174,12 @@ void remove_station(int station_number){
     station_remove_req(station_number);
 }
 
+// communicates removal of channel to the clients for updating info
 void station_remove_req(int station_removed)
 {
     int TCP_sockfd = 0, TCP_read;
     struct sockaddr_in TCP_servaddr;
+    // Socket is created here
     if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
@@ -187,29 +193,31 @@ void station_remove_req(int station_removed)
         exit(1);
     }
 
-    // printf("IP Checked!!\n");
+    /* Initialising with the required veriables & their values */
     TCP_servaddr.sin_family = AF_INET;
     TCP_servaddr.sin_addr.s_addr = INADDR_ANY;
-    TCP_servaddr.sin_port = htons(TCP_PORT2);
+    TCP_servaddr.sin_port = htons(TCP_PORT2);  // using port 2 to send special info
 
+    // request to connect with clients
     if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr, sizeof(TCP_servaddr)) < 0)
     {
         printf("\nConnection Failed \n");
         exit(1);
     }
-    
+    /* Sending the station number which is needed to be deleted */
     send(TCP_sockfd, &station_removed, sizeof(int),0);
     close(TCP_sockfd);
 }
 
-// This function is used to send details about the available channels ov
+// This function is used to send details about the available channels over TCP
 void* fetch_stations(void* input){
-    
+    // All the necessary declarations
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
 
+    // The socket is created here
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
@@ -221,12 +229,15 @@ void* fetch_stations(void* input){
     }
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
+    // port 1 for sending initial total channel info
     address.sin_port = htons(TCP_PORT);
 
+    // Socket is binded here
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+    // Now we wait for a connection. MAX CONNECTIONS = 3
     if (listen(server_fd, 3) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -238,13 +249,15 @@ void* fetch_stations(void* input){
             perror("accept");
             exit(EXIT_FAILURE);
         }
+        /* forming the list of the stations */
         inf input_data = parse_input();
+        /* sending the station list along with their respective data */
         send(new_socket, &input_data, sizeof(inf), 0);
     }
     
 }
 
-
+// This function is a threaded function used to send video over UDP
 void* send_data(void* input){
     int multiport,infoport,duration,station_number,multicast_address,bit_rate;
     string videofilename,station_name;
@@ -267,6 +280,7 @@ void* send_data(void* input){
     int multi_sockfd;
     struct sockaddr_in servaddr;
 
+   // Initializing the UDP socket for the transmission
     if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("server : socket");
         exit(1);
@@ -298,6 +312,7 @@ void* send_data(void* input){
             exit(1);
         }
         // printf("%d : Packet Number: %i Multicast_address : %d\n", multiport, packet_index,multicast_address);
+        // following variable is just for knowing which packets are getting sent
         packet_index++;
         if (packet_index % duration == 0) {
             mid = clock();
@@ -318,12 +333,14 @@ void* send_data(void* input){
     return NULL;
 }
 
+// parsing object data into structure suitable for transmission in socket
 inf parse_input(){
     int data_size = station_vec.size();
     inf input_data;
     input_data.size = data_size;
     stats temp_struc;
     
+    /* Forming the structure (the format required to send to the client) */
     for (int i = 0; i < data_size; i++){
 
         temp_struc.bit_rate = station_vec[i].bit_rate;
