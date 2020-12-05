@@ -164,10 +164,10 @@ bool add_station(){
     
     int station_number = get_free_number();
     if(station_number!=-1){
-        string addr = "239.192.1." + to_string(station_number); //Why do we need new ip address for each station, can't we just assign it different port ?
+        string addr = "219.192.1." + to_string(station_number); //Why do we need new ip address for each station, can't we just assign it different port ?
         const char *address = addr.c_str();
-        int data_port = 5000+station_number;
-        int info_port = 6000+station_number;
+        int data_port = 7000+station_number;
+        int info_port = 8010+station_number;
         station new_station(station_number,"Station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
         cout << new_station.video_duration << " " << new_station.video_filename << "\n";
         station_vec.push_back(new_station);
@@ -301,7 +301,7 @@ void* send_data(void* input){
             perror("sender: sendto");
             exit(1);
         }
-        printf("%d : Packet Number: %i\n", multiport, packet_index);
+        printf("%d : Packet Number: %i Multicast_address : %d\n", multiport, packet_index,multicast_address);
         packet_index++;
         if (packet_index % duration == 0) {
             mid = clock();
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]){
     
     while(true)
     {
-        cout << "\n1. Add Station \n2. Remove Station\n3. Quit\n\nEnter your choice: ";
+        cout << "\n1. Add Station \n2. Remove Station\n3. Send\n\nEnter your choice: ";
         int input;
         cin >> input;   
         if(input==1)                    
@@ -371,7 +371,9 @@ int main(int argc, char *argv[]){
         } 
         else if(input==3)
         {
+            printf("Sending data..\n");
             pthread_t udpid;
+            cout << station_vec.size() << "\n";
             pthread_create(&udpid,NULL,send_data,(void *)&station_vec[0]);
             sleep(0.5);
         }

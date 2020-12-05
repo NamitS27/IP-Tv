@@ -78,7 +78,7 @@ void player_widget_on_realize(GtkWidget *widget, gpointer data) {
 
 void *on_open() {
     usleep(5000000);
-    open_media("file:///media/mrj35/Data/Academics/ICT-Sem5/CN_Lab/Project/Internet-Tv/videos/Station1.mp4");
+    open_media("file:///media/mrj35/Data/Academics/ICT-Sem5/CN_Lab/Project/Internet-Tv/videos/output.mp4");
 }
 
 void open_media(const char *uri) {
@@ -106,123 +106,123 @@ void pause_player(void) {
 }
 
 void *play_channel(void *input){
-    usleep(500000);
-    int opt = 1;
-    gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
+    // usleep(500000);
+    // int opt = 1;
+    // gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
     
-    int multicast_address = ((struct station_list *)input)->multicast_address;
-    int data_port = ((struct station_list *)input)->data_port;
-    int info_port = ((struct station_list *)input)->info_port;
-    int bit_rate = ((struct station_list *)input)->bit_rate;
+    // int multicast_address = ((struct station_list *)input)->multicast_address;
+    // int data_port = ((struct station_list *)input)->data_port;
+    // int info_port = ((struct station_list *)input)->info_port;
+    // int bit_rate = ((struct station_list *)input)->bit_rate;
 
-    printf("Multi-cast adrress : %d\n", multicast_address);
-    printf("Data Port : %d\n", data_port);
-    printf("Info Port : %d\n", info_port);
-    printf("Bit Rate : %d\n", bit_rate);
+    // printf("Multi-cast adrress : %d\n", multicast_address);
+    // printf("Data Port : %d\n", data_port);
+    // printf("Info Port : %d\n", info_port);
+    // printf("Bit Rate : %d\n", bit_rate);
 
-    /*----------------------    SOCKET MULTI-CAST   --------------------*/
-    int multi_sockfd;
-    struct sockaddr_in servaddr;
-    char interface_name[100];
-    struct ifreq ifr;
-    char *mcast_addr;
-    struct ip_mreq mcastjoin_req;      /* multicast join struct */
-    struct sockaddr_in mcast_servaddr; /* multicast sender*/
-    socklen_t mcast_servaddr_len;
+    // /*----------------------    SOCKET MULTI-CAST   --------------------*/
+    // int multi_sockfd;
+    // struct sockaddr_in servaddr;
+    // char interface_name[100];
+    // struct ifreq ifr;
+    // char *mcast_addr;
+    // struct ip_mreq mcastjoin_req;      /* multicast join struct */
+    // struct sockaddr_in mcast_servaddr; /* multicast sender*/
+    // socklen_t mcast_servaddr_len;
 
-    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("receiver: socket");
-        exit(1);
-    }
-    printf("Socket Created\n");
+    // if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
+    //     perror("receiver: socket");
+    //     exit(1);
+    // }
+    // printf("Socket Created\n");
 
-    memset((char *)&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(data_port);
-    printf("PORT no : %d\n",data_port);
+    // memset((char *)&servaddr, 0, sizeof(servaddr));
+    // servaddr.sin_family = AF_INET;
+    // servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    // servaddr.sin_port = htons(data_port);
+    // printf("PORT no : %d\n",data_port);
 
-    memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, IF_NAME, sizeof(IF_NAME) - 1);
+    // memset(&ifr, 0, sizeof(ifr));
+    // strncpy(ifr.ifr_name, IF_NAME, sizeof(IF_NAME) - 1);
 
-    if (setsockopt(multi_sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-                   sizeof(opt))) {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }
+    // if (setsockopt(multi_sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+    //                sizeof(opt))) {
+    //     perror("setsockopt");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    int ret;
-    if ((ret = setsockopt(multi_sockfd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr,
-                    sizeof(ifr))) < 0) {
-        perror("Receiver: setsockopt() error");
-        printf("RET : %d\n",ret);
-        close(multi_sockfd);
-        exit(1);
-    }
+    // int ret;
+    // if ((ret = setsockopt(multi_sockfd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr,
+    //                 sizeof(ifr))) < 0) {
+    //     perror("Receiver: setsockopt() error");
+    //     printf("RET : %d\n",ret);
+    //     close(multi_sockfd);
+    //     exit(1);
+    // }
 
-    if ((bind(multi_sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) <0) {
-        perror("Receiver: bind()");
-        exit(1);
-    }
+    // if ((bind(multi_sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) <0) {
+    //     perror("Receiver: bind()");
+    //     exit(1);
+    // }
 
-    mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
-    mcastjoin_req.imr_interface.s_addr = htonl(INADDR_ANY);
+    // mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
+    // mcastjoin_req.imr_interface.s_addr = htonl(INADDR_ANY);
     
-    if ((ret = setsockopt(multi_sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                    (void *)&mcastjoin_req, sizeof(mcastjoin_req))) < 0) {
-        perror("mcast join receive: setsockopt()");
+    // if ((ret = setsockopt(multi_sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+    //                 (void *)&mcastjoin_req, sizeof(mcastjoin_req))) < 0) {
+    //     perror("mcast join receive: setsockopt()");
         
-        exit(1);
-    }
-    /*-----------------------------------------------------------------*/
+    //     exit(1);
+    // }
+    // /*-----------------------------------------------------------------*/
 
-    /*----------------------    BUFFER DECLAARATIONS ------------------*/
-    char buffer[bit_rate];
-    int recieve_size;
-    /*-----------------------------------------------------------------*/
+    // /*----------------------    BUFFER DECLAARATIONS ------------------*/
+    // char buffer[bit_rate];
+    // int recieve_size;
+    // /*-----------------------------------------------------------------*/
 
-    /*----------------------    FILE DECLARATIONS   -------------------*/
-    FILE *mediaFile;
-    char outputarray[bit_rate];
-    mediaFile = fopen("output.mp4", "w");
+    // /*----------------------    FILE DECLARATIONS   -------------------*/
+    // FILE *mediaFile;
+    // char outputarray[bit_rate];
+    // mediaFile = fopen("output.mp4", "w");
 
-    if (mediaFile == NULL) {
-        printf("Error has occurred. Image file could not be opened\n");
-        exit(1);
-    }
+    // if (mediaFile == NULL) {
+    //     printf("Error has occurred. Image file could not be opened\n");
+    //     exit(1);
+    // }
 
     pthread_t vlc;
     pthread_create(&vlc, NULL, on_open, NULL);
 
     /*-----------------------------------------------------------------*/
-    printf("\nReady to listen!\n\n");
-    flag = 1;
-    pause_flag = 0;
+    // printf("\nReady to listen!\n\n");
+    // flag = 1;
+    // pause_flag = 0;
 
-    while (flag) {
-        printf("Hello\n");
-        if (pause_flag == 0) {
-            printf("Here\n");
-            /*memset(&mcast_servaddr, 0, sizeof(mcast_servaddr));
-            mcast_servaddr_len = sizeof(mcast_servaddr);
-            memset(buffer, '\0', bit_rate);
-            delay(1);
-            memset(buffer, 0, sizeof(buffer));
-            // if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, (struct sockaddr *)&mcast_servaddr,&mcast_servaddr_len)) < 0) {
-            //     perror("receiver: recvfrom()");
-            //     exit(TRUE);
-            // }
-            printf("DATA: %d\n",recieve_size);
-            fwrite(buffer, 1, recieve_size, mediaFile);
-            // printf("DATA: %s\n",buffer);
-            if (recieve_size < bit_rate) {
-                flag = 0;
-            }*/
-        }
-        flag = 0;
-    }
-    fclose(mediaFile);
-    close(multi_sockfd);
+    // while (flag) {
+    //     printf("Hello\n");
+    //     if (pause_flag == 0) {
+    //         printf("Here\n");
+    //         memset(&mcast_servaddr, 0, sizeof(mcast_servaddr));
+    //         mcast_servaddr_len = sizeof(mcast_servaddr);
+    //         // memset(buffer, '\0', bit_rate);
+    //         // delay(1);
+    //         memset(buffer, 0, sizeof(buffer));
+    //         if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, (struct sockaddr *)&mcast_servaddr,&mcast_servaddr_len)) < 0) {
+    //             perror("receiver: recvfrom()");
+    //             exit(TRUE);
+    //         }
+    //         printf("DATA: %d\n",recieve_size);
+    //         fwrite(buffer, 1, recieve_size, mediaFile);
+    //         // printf("DATA: %s\n",buffer);
+    //         if (recieve_size < bit_rate) {
+    //             flag = 0;
+    //         }
+    //     }
+    //     flag = 0;
+    // }
+    // fclose(mediaFile);
+    // close(multi_sockfd);
     printf("Successfully Received Channel Data!!");
 }
 
@@ -360,7 +360,7 @@ int main(int argc, gchar *argv[]){
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_usize(GTK_WIDGET(window), 1000, 600);
 
-    gtk_window_set_title(GTK_WINDOW(window), "Internet Radio");
+    gtk_window_set_title(GTK_WINDOW(window), "Internet TV");
     gtk_signal_connect(GTK_OBJECT(window), "destroy",
                        GTK_SIGNAL_FUNC(gtk_main_quit), NULL);
 
@@ -371,7 +371,7 @@ int main(int argc, gchar *argv[]){
 
     scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
-
+    // gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window),700);
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
     gtk_widget_show(scrolled_window);
 
@@ -380,6 +380,8 @@ int main(int argc, gchar *argv[]){
     gtk_clist_set_column_width(GTK_CLIST(clist), 0, 380);
     gtk_clist_set_column_width(GTK_CLIST(clist), 1, 380);
     gtk_clist_set_column_width(GTK_CLIST(clist), 2, 380);
+
+    // gtk_clist_set_row_height(GTK_CLIST(clist),100);
 
     gtk_signal_connect(GTK_OBJECT(clist), "select_row",GTK_SIGNAL_FUNC(choose_station), NULL);
 
@@ -394,11 +396,15 @@ int main(int argc, gchar *argv[]){
 
     button_fetch = gtk_button_new_with_label("Fetch All Channels");
 
-    gtk_box_pack_start(GTK_BOX(hbox), button_fetch, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), button_fetch, TRUE, TRUE, 10);
 
     gtk_signal_connect_object(GTK_OBJECT(button_fetch), "clicked",
                               GTK_SIGNAL_FUNC(get_station_list),
                               (gpointer)clist);
+
+    GdkColor button_color;
+    gdk_color_parse("red",&button_color);
+    gtk_widget_modify_bg(GTK_WIDGET(button_fetch),GTK_STATE_NORMAL,&button_color);
 
     gtk_widget_show(button_fetch);
     
@@ -421,6 +427,11 @@ int main(int argc, gchar *argv[]){
     vlc_inst = libvlc_new(0, NULL);
     media_player = libvlc_media_player_new(vlc_inst);
     g_signal_connect(G_OBJECT(player_widget), "realize",G_CALLBACK(player_widget_on_realize), NULL);
+
+
+    GdkColor color;
+    gdk_color_parse("gray",&color);
+    gtk_widget_modify_bg(GTK_WIDGET(window),GTK_STATE_NORMAL,&color);
 
     gtk_widget_show_all(window);
 
