@@ -14,7 +14,7 @@
 
 #define TCP_PORT 8080
 
-#define BIT_RATE1 4096
+#define BIT_RATE1 4096 
 #define BIT_RATE2 2048
 #define BIT_RATE3 1024
 #define BIT_RATE4 512
@@ -71,9 +71,13 @@ class station{
     }
     
     int get_file_duration(int station_number,string station_name,int bit_rate){
-        
-        string sys_call = "ffmpeg -i videos/" + station_name + ".mp4 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// > duration" + to_string(station_number) + ".txt";
-        
+
+        string station_name_conv = station_name;
+        // station_name[0] = toupper(station_name[0]);
+        // string convert_video_to_streamable = "ffmpeg -i videos/" + station_name + ".mp4 -f mpegts videos/" + station_name_conv + ".mp4";
+        // system(convert_video_to_streamable.c_str());
+
+        string sys_call = "ffmpeg -i videos/" + station_name_conv + ".mp4 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// > duration" + to_string(station_number) + ".txt";
         system(sys_call.c_str());
 
         FILE *media_file;

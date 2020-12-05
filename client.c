@@ -21,7 +21,7 @@
 #define TCP_IP "127.0.0.1"
 #define BUFF_SIZE 10000
 #define IF_NAME "ens33"
-#define MAX_STATION_SIZE 300
+#define MAX_STATION_SIZE 30
 #define BORDER_WIDTH 6
 
 void destroy(GtkWidget *widget, gpointer data);
@@ -36,8 +36,9 @@ libvlc_media_player_t *media_player;
 libvlc_instance_t *vlc_inst;
 GtkWidget *playpause_button;
 
+typedef struct station_list
 
-typedef struct station_list{
+{
     int station_number;
     char station_name[255];
     int multicast_address;
@@ -48,18 +49,21 @@ typedef struct station_list{
     float video_duration;
 } stats;
 
-typedef struct information{
-    int size;
-    stats data[MAX_STATION_SIZE];    
-} station_information;
 
+typedef struct information
+{
+    int size;
+    stats data[MAX_STATION_SIZE];
+} station_information;
 
 station_information infos;
 int current_radio_channel;
 int flag;
 int pause_flag;
+int recieving[MAX_STATION_SIZE];
 
-void delay(int milliseconds) {
+void delay(int milliseconds)
+{
     long pause;
     clock_t now, then;
 
@@ -71,20 +75,23 @@ void delay(int milliseconds) {
 
 void destroy(GtkWidget *widget, gpointer data) { gtk_main_quit(); }
 
-void player_widget_on_realize(GtkWidget *widget, gpointer data) {
+void player_widget_on_realize(GtkWidget *widget, gpointer data)
+{
     libvlc_media_player_set_xwindow(
         media_player, GDK_WINDOW_XID(gtk_widget_get_window(widget)));
 }
 
-void *on_open(void *input) {
+void *on_open(void *input)
+{
     usleep(5000000);
     char path[100] = "file:///home/namit27/Documents/Internet-Tv/";
-    strcat(path,(char *)input);
+    strcat(path, (char *)input);
     // printf("%s\n\n",path);
     open_media(path);
 }
 
-void open_media(const char *uri) {
+void open_media(const char *uri)
+{
 
     libvlc_media_t *media;
     media = libvlc_media_new_location(vlc_inst, uri);
@@ -93,38 +100,45 @@ void open_media(const char *uri) {
     libvlc_media_release(media);
 }
 
-void on_stop(GtkWidget *widget, gpointer data) {
+void on_stop(GtkWidget *widget, gpointer data)
+{
     pause_player();
     libvlc_media_player_stop(media_player);
 }
 
-void play(void) {
+void play(void)
+{
     libvlc_media_player_play(media_player);
     gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
 }
 
-void pause_player(void) {
+void pause_player(void)
+{
     libvlc_media_player_pause(media_player);
     gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-play");
 }
 
-void *play_channel(void *input){
-    usleep(500000);
+void *play_channel(void *input)
+{
+    // usleep(500000);
     int opt = 1;
     gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
-    
+
     int multicast_address = ((struct station_list *)input)->multicast_address;
     int data_port = ((struct station_list *)input)->data_port;
     int info_port = ((struct station_list *)input)->info_port;
     int bit_rate = ((struct station_list *)input)->bit_rate;
+    int data_received = recieving[((struct station_list *)input)->station_number];
     char fname[20];
-    strncpy(fname,((struct station_list *)input)->station_name,sizeof(((struct station_list *)input)->station_name));
-    strcat(fname,".mp4");
-    printf("File : %s\n",fname);
+    strncpy(fname, ((struct station_list *)input)->station_name, sizeof(((struct station_list *)input)->station_name));
+    strcat(fname, ".mp4");
+    printf("File : %s\n", fname);
     printf("Multi-cast adrress : %d\n", multicast_address);
     printf("Data Port : %d\n", data_port);
     printf("Info Port : %d\n", info_port);
     printf("Bit Rate : %d\n", bit_rate);
+
+    printf("DATA received: %d\n", data_received);
 
     // /*----------------------    SOCKET MULTI-CAST   --------------------*/
     int multi_sockfd;
@@ -136,7 +150,8 @@ void *play_channel(void *input){
     struct sockaddr_in mcast_servaddr; /* multicast sender*/
     socklen_t mcast_servaddr_len;
 
-    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+    {
         perror("receiver: socket");
         exit(1);
     }
@@ -147,7 +162,7 @@ void *play_channel(void *input){
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(data_port);
 
-    if(bind(multi_sockfd,(struct sockaddr*) &servaddr,sizeof(servaddr))<0)
+    if (bind(multi_sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
     {
         perror("Receiver: bind()");
     }
@@ -155,7 +170,7 @@ void *play_channel(void *input){
     mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
     mcastjoin_req.imr_interface.s_addr = htonl(INADDR_ANY);
 
-    if(setsockopt(multi_sockfd,IPPROTO_IP,IP_ADD_MEMBERSHIP,(void *)&mcastjoin_req,sizeof(mcastjoin_req))<0)
+    if (setsockopt(multi_sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void *)&mcastjoin_req, sizeof(mcastjoin_req)) < 0)
     {
         perror("Receiver: setsockopt()");
     }
@@ -168,10 +183,11 @@ void *play_channel(void *input){
     // /*----------------------    FILE DECLARATIONS   -------------------*/
     FILE *mediaFile;
     char outputarray[bit_rate];
-    printf("Filename : %s",fname);
+    // printf("Filename : %s",fname);
     mediaFile = fopen(fname, "w");
 
-    if (mediaFile == NULL) {
+    if (mediaFile == NULL)
+    {
         printf("Error has occurred. Image file could not be opened\n");
         exit(1);
     }
@@ -183,35 +199,45 @@ void *play_channel(void *input){
     printf("\nReady to listen!\n\n");
     flag = 1;
     pause_flag = 0;
-
-    while (flag) {
-        if (pause_flag == 0) {
-            memset(buffer, 0, sizeof(buffer));
-            if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL,0)) < 0) {
-                perror("receiver: recvfrom()");
-            }
-            printf("DATA: %d\n",recieve_size);
-            fwrite(buffer, 1, recieve_size, mediaFile);
-            if (recieve_size < bit_rate) {
-                flag = 0;
+    if (data_received == 0)
+    {
+        while (flag)
+        {
+            if (pause_flag == 0)
+            {
+                memset(buffer, 0, sizeof(buffer));
+                if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL, 0)) < 0)
+                {
+                    perror("receiver: recvfrom()");
+                }
+                printf("DATA: %d\n", recieve_size);
+                fwrite(buffer, 1, recieve_size, mediaFile);
+                if (recieve_size < bit_rate)
+                {
+                    flag = 0;
+                }
             }
         }
+        recieving[((struct station_list *)input)->station_number] = 1;
     }
     fclose(mediaFile);
     close(multi_sockfd);
     printf("Successfully Received Channel Data!!");
 }
 
-void get_station_list(gpointer data){
+void get_station_list(gpointer data)
+{
     int TCP_sockfd = 0, TCP_read;
     struct sockaddr_in TCP_servaddr;
-    if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((TCP_sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
         printf("\n Socket creation error \n");
         exit(1);
     }
     printf("Socket Created!\n");
 
-    if (inet_pton(AF_INET, TCP_IP, &TCP_servaddr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, TCP_IP, &TCP_servaddr.sin_addr) <= 0)
+    {
         printf("\nInvalid address/ Address not supported \n");
         exit(1);
     }
@@ -221,47 +247,51 @@ void get_station_list(gpointer data){
     TCP_servaddr.sin_family = AF_INET;
     TCP_servaddr.sin_port = htons(TCP_PORT);
 
-    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr, sizeof(TCP_servaddr)) < 0) {
+    if (connect(TCP_sockfd, (struct sockaddr *)&TCP_servaddr, sizeof(TCP_servaddr)) < 0)
+    {
         printf("\nConnection Failed \n");
         exit(1);
     }
-    
-    if((TCP_read = read(TCP_sockfd, &infos, sizeof(station_information))) < 0){
+
+    if ((TCP_read = read(TCP_sockfd, &infos, sizeof(station_information))) < 0)
+    {
         perror("Failed to read");
         exit(-1);
     }
-    
-    gtk_clist_clear((GtkCList *)data); 
+
+    gtk_clist_clear((GtkCList *)data);
 
     char *send_data[infos.size][2];
-    
-    for (int i = 0; i < infos.size; i++){
-        
+
+    for (int i = 0; i < infos.size; i++)
+    {
         printf("--------------------------------------------------\n");
-        printf("Station number : %d\n",infos.data[i].station_number);
+        printf("Station number : %d\n", infos.data[i].station_number);
         printf("Station name : %s\n", infos.data[i].station_name);
-        printf("Multicast_address : %d\n",infos.data[i].multicast_address);
-        printf("Video filename : %s\n",infos.data[i].video_filename);
+        recieving[infos.data[i].station_number] = 0;
+
+        printf("Multicast_address : %d\n", infos.data[i].multicast_address);
+        printf("Video filename : %s\n", infos.data[i].video_filename);
         printf("--------------------------------------------------\n");
-        
+
         char sta_num[10];
-        snprintf(sta_num, sizeof(sta_num), "%d", infos.data[i].station_number);      
+        snprintf(sta_num, sizeof(sta_num), "%d", infos.data[i].station_number);
         char sta_add[10];
         snprintf(sta_add, sizeof(sta_add), "%d", infos.data[i].multicast_address);
         // char *sta_name = &infos.data[i].station_name[0];
-        
+
         send_data[i][0] = sta_num;
         send_data[i][1] = infos.data[i].station_name;
         // send_data[i][2] = sta_add;
-        
+
         gtk_clist_append((GtkCList *)data, send_data[i]);
+        close(TCP_sockfd);
     }
-    
-    close(TCP_sockfd);
 }
 
-void choose_station(GtkWidget *clist, gint row, gint column,
-                    GdkEventButton *event, gpointer data) {
+void choose_station(GtkWidget * clist, gint row, gint column,
+                    GdkEventButton * event, gpointer data)
+{
     // gtk_clist_get_text(GTK_CLIST(clist), row, column, &text);
     // gchar *text;
     // gtk_clist_get_text(GTK_CLIST(clist), row, 2, &text);
@@ -269,34 +299,39 @@ void choose_station(GtkWidget *clist, gint row, gint column,
 
     pthread_t my_radio_channel;
     // struct args *station = (struct args *)malloc(sizeof(struct args));
-    struct station_list *ind_station = (struct station_list*)malloc(sizeof(struct station_list));
-
+    struct station_list *ind_station = (struct station_list *)malloc(sizeof(struct station_list));
 
     ind_station->multicast_address = infos.data[row].multicast_address;
     ind_station->data_port = infos.data[row].data_port;
     ind_station->info_port = infos.data[row].info_port;
-    strcpy(ind_station->station_name,infos.data[row].station_name);
+    strcpy(ind_station->station_name, infos.data[row].station_name);
     ind_station->station_number = infos.data[row].station_number;
     ind_station->bit_rate = infos.data[row].bit_rate;
 
-
     current_radio_channel = row;
     printf("---------------------------------------------------\n");
-    printf("Station name : %s\n",ind_station->station_name);
-    printf("Station number : %d\n",ind_station->station_number);
-    printf("Data port : %d\n",ind_station->data_port);
-    printf("Info port : %d\n",ind_station->info_port);
-    printf("Bit rate : %d\n",ind_station->bit_rate);
-    printf("Multicast address : %d\n",ind_station->multicast_address);
+    printf("Station name : %s\n", ind_station->station_name);
+    printf("Station number : %d\n", ind_station->station_number);
+    printf("Data port : %d\n", ind_station->data_port);
+    printf("Info port : %d\n", ind_station->info_port);
+    printf("Bit rate : %d\n", ind_station->bit_rate);
+    printf("Multicast address : %d\n", ind_station->multicast_address);
     printf("-----------------------------------------------------\n");
     pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station);
 }
 
-void on_playpause(GtkWidget *widget, gpointer data) {
-    if (libvlc_media_player_is_playing(media_player) == 1) {
+void on_playpause(GtkWidget * widget, gpointer data)
+{
+    if (libvlc_media_player_is_playing(media_player) == 1)
+
+    {
         pause_flag = 1;
         pause_player();
-    } else {
+    }
+
+    else
+
+    {
         pause_flag = 0;
         flag = 0;
         pthread_t my_radio_channel;
@@ -309,9 +344,9 @@ void on_playpause(GtkWidget *widget, gpointer data) {
     }
 }
 
-
-
-int main(int argc, gchar *argv[]){
+int main(int argc, gchar *argv[])
+{
+    memset(recieving, -1, sizeof(recieving));
     GtkWidget *window;
     GtkWidget *vbox, *hbox;
     GtkWidget *scrolled_window, *clist;
@@ -403,6 +438,6 @@ int main(int argc, gchar *argv[]){
     gtk_widget_show_all(window);
 
     gtk_main();
-    
+
     return 0;
 }

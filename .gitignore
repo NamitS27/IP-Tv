@@ -1,6 +1,4 @@
 .vscode
 server
 client
-*.exe
-*.mp4
-*.mov
+*.txt
