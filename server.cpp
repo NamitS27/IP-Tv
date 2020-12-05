@@ -164,7 +164,8 @@ bool add_station(){
     
     int station_number = get_free_number();
     if(station_number!=-1){
-        string addr = "219.192.1." + to_string(station_number); //Why do we need new ip address for each station, can't we just assign it different port ?
+        string addr = "127.0.0.1";
+        // string addr = "219.192.1." + to_string(station_number); //Why do we need new ip address for each station, can't we just assign it different port ?
         const char *address = addr.c_str();
         int data_port = 7000+station_number;
         int info_port = 8010+station_number;
@@ -266,10 +267,12 @@ void* send_data(void* input){
     int multi_sockfd;
     struct sockaddr_in servaddr;
 
-    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
+    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
         perror("server : socket");
-        exit(1);
+        // exit(1);
     }
+
+    // if(setsockopt(multi_sockfd,IPPROTO_IP,IP_MULTICAST_TTL,(void *)))
 
     memset((char *)&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -299,7 +302,7 @@ void* send_data(void* input){
                                   sizeof(servaddr))) == -1) {
 
             perror("sender: sendto");
-            exit(1);
+            // exit(1);
         }
         printf("%d : Packet Number: %i Multicast_address : %d\n", multiport, packet_index,multicast_address);
         packet_index++;

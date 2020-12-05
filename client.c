@@ -106,41 +106,55 @@ void pause_player(void) {
 }
 
 void *play_channel(void *input){
-    // usleep(500000);
-    // int opt = 1;
-    // gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
+    usleep(500000);
+    int opt = 1;
+    gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
     
-    // int multicast_address = ((struct station_list *)input)->multicast_address;
-    // int data_port = ((struct station_list *)input)->data_port;
-    // int info_port = ((struct station_list *)input)->info_port;
-    // int bit_rate = ((struct station_list *)input)->bit_rate;
+    int multicast_address = ((struct station_list *)input)->multicast_address;
+    int data_port = ((struct station_list *)input)->data_port;
+    int info_port = ((struct station_list *)input)->info_port;
+    int bit_rate = ((struct station_list *)input)->bit_rate;
 
-    // printf("Multi-cast adrress : %d\n", multicast_address);
-    // printf("Data Port : %d\n", data_port);
-    // printf("Info Port : %d\n", info_port);
-    // printf("Bit Rate : %d\n", bit_rate);
+    printf("Multi-cast adrress : %d\n", multicast_address);
+    printf("Data Port : %d\n", data_port);
+    printf("Info Port : %d\n", info_port);
+    printf("Bit Rate : %d\n", bit_rate);
 
     // /*----------------------    SOCKET MULTI-CAST   --------------------*/
-    // int multi_sockfd;
-    // struct sockaddr_in servaddr;
-    // char interface_name[100];
-    // struct ifreq ifr;
-    // char *mcast_addr;
-    // struct ip_mreq mcastjoin_req;      /* multicast join struct */
-    // struct sockaddr_in mcast_servaddr; /* multicast sender*/
-    // socklen_t mcast_servaddr_len;
+    int multi_sockfd;
+    struct sockaddr_in servaddr;
+    char interface_name[100];
+    struct ifreq ifr;
+    char *mcast_addr;
+    struct ip_mreq mcastjoin_req;      /* multicast join struct */
+    struct sockaddr_in mcast_servaddr; /* multicast sender*/
+    socklen_t mcast_servaddr_len;
 
-    // if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
-    //     perror("receiver: socket");
-    //     exit(1);
-    // }
-    // printf("Socket Created\n");
+    if ((multi_sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+        perror("receiver: socket");
+        exit(1);
+    }
+    printf("Socket Created\n");
 
-    // memset((char *)&servaddr, 0, sizeof(servaddr));
-    // servaddr.sin_family = AF_INET;
-    // servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    // servaddr.sin_port = htons(data_port);
+    memset((char *)&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(data_port);
     // printf("PORT no : %d\n",data_port);
+    if(bind(multi_sockfd,(struct sockaddr*) &servaddr,sizeof(servaddr))<0)
+    {
+        perror("Receiver: bind()");
+        // exit(1);
+    }
+
+    mcastjoin_req.imr_multiaddr.s_addr = multicast_address;
+    mcastjoin_req.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    if(setsockopt(multi_sockfd,IPPROTO_IP,IP_ADD_MEMBERSHIP,(void *)&mcastjoin_req,sizeof(mcastjoin_req))<0)
+    {
+        perror("Receiver: setsockopt()");
+        // exit(1);
+    }
 
     // memset(&ifr, 0, sizeof(ifr));
     // strncpy(ifr.ifr_name, IF_NAME, sizeof(IF_NAME) - 1);
@@ -177,52 +191,52 @@ void *play_channel(void *input){
     // /*-----------------------------------------------------------------*/
 
     // /*----------------------    BUFFER DECLAARATIONS ------------------*/
-    // char buffer[bit_rate];
-    // int recieve_size;
+    char buffer[bit_rate];
+    int recieve_size;
     // /*-----------------------------------------------------------------*/
 
     // /*----------------------    FILE DECLARATIONS   -------------------*/
-    // FILE *mediaFile;
-    // char outputarray[bit_rate];
-    // mediaFile = fopen("output.mp4", "w");
+    FILE *mediaFile;
+    char outputarray[bit_rate];
+    mediaFile = fopen("output.mp4", "w");
 
-    // if (mediaFile == NULL) {
-    //     printf("Error has occurred. Image file could not be opened\n");
-    //     exit(1);
-    // }
+    if (mediaFile == NULL) {
+        printf("Error has occurred. Image file could not be opened\n");
+        exit(1);
+    }
 
     pthread_t vlc;
     pthread_create(&vlc, NULL, on_open, NULL);
 
     /*-----------------------------------------------------------------*/
-    // printf("\nReady to listen!\n\n");
-    // flag = 1;
-    // pause_flag = 0;
+    printf("\nReady to listen!\n\n");
+    flag = 1;
+    pause_flag = 0;
 
-    // while (flag) {
+    while (flag) {
     //     printf("Hello\n");
-    //     if (pause_flag == 0) {
+        if (pause_flag == 0) {
     //         printf("Here\n");
-    //         memset(&mcast_servaddr, 0, sizeof(mcast_servaddr));
-    //         mcast_servaddr_len = sizeof(mcast_servaddr);
-    //         // memset(buffer, '\0', bit_rate);
-    //         // delay(1);
-    //         memset(buffer, 0, sizeof(buffer));
-    //         if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, (struct sockaddr *)&mcast_servaddr,&mcast_servaddr_len)) < 0) {
-    //             perror("receiver: recvfrom()");
-    //             exit(TRUE);
-    //         }
-    //         printf("DATA: %d\n",recieve_size);
-    //         fwrite(buffer, 1, recieve_size, mediaFile);
+            memset(&mcast_servaddr, 0, sizeof(mcast_servaddr));
+            mcast_servaddr_len = sizeof(mcast_servaddr);
+            // memset(buffer, '\0', bit_rate);
+            // delay(1);
+            memset(buffer, 0, sizeof(buffer));
+            if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL,0)) < 0) {
+                perror("receiver: recvfrom()");
+                // exit(TRUE);
+            }
+            printf("DATA: %d\n",recieve_size);
+            fwrite(buffer, 1, recieve_size, mediaFile);
     //         // printf("DATA: %s\n",buffer);
-    //         if (recieve_size < bit_rate) {
-    //             flag = 0;
-    //         }
-    //     }
-    //     flag = 0;
-    // }
-    // fclose(mediaFile);
-    // close(multi_sockfd);
+            if (recieve_size < bit_rate) {
+                flag = 0;
+            }
+        }
+        // flag = 0;
+    }
+    fclose(mediaFile);
+    close(multi_sockfd);
     printf("Successfully Received Channel Data!!");
 }
 
