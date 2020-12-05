@@ -36,9 +36,7 @@ libvlc_media_player_t *media_player;
 libvlc_instance_t *vlc_inst;
 GtkWidget *playpause_button;
 
-typedef struct station_list
-
-{
+typedef struct station_list{
     int station_number;
     char station_name[255];
     int multicast_address;
@@ -49,9 +47,7 @@ typedef struct station_list
     float video_duration;
 } stats;
 
-
-typedef struct information
-{
+typedef struct information{
     int size;
     stats data[MAX_STATION_SIZE];
 } station_information;
@@ -59,7 +55,11 @@ typedef struct information
 station_information infos;
 int current_radio_channel;
 int flag;
-int pause_flag;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int stop = 0;
+
+// int pause_flag;
 int recieving[MAX_STATION_SIZE];
 
 void delay(int milliseconds)
@@ -103,6 +103,7 @@ void open_media(const char *uri)
 void on_stop(GtkWidget *widget, gpointer data)
 {
     pause_player();
+    // stop = 1;
     libvlc_media_player_stop(media_player);
 }
 
@@ -122,13 +123,14 @@ void *play_channel(void *input)
 {
     // usleep(500000);
     int opt = 1;
+    recieving[((struct station_list *)input)->station_number] = 1;
     gtk_button_set_label(GTK_BUTTON(playpause_button), "gtk-media-pause");
 
     int multicast_address = ((struct station_list *)input)->multicast_address;
     int data_port = ((struct station_list *)input)->data_port;
     int info_port = ((struct station_list *)input)->info_port;
     int bit_rate = ((struct station_list *)input)->bit_rate;
-    int data_received = recieving[((struct station_list *)input)->station_number];
+    // int data_received = recieving[((struct station_list *)input)->station_number];
     char fname[20];
     strncpy(fname, ((struct station_list *)input)->station_name, sizeof(((struct station_list *)input)->station_name));
     strcat(fname, ".mp4");
@@ -138,7 +140,7 @@ void *play_channel(void *input)
     printf("Info Port : %d\n", info_port);
     printf("Bit Rate : %d\n", bit_rate);
 
-    printf("DATA received: %d\n", data_received);
+    // printf("DATA received: %d\n", data_received);
 
     // /*----------------------    SOCKET MULTI-CAST   --------------------*/
     int multi_sockfd;
@@ -198,29 +200,35 @@ void *play_channel(void *input)
     /*-----------------------------------------------------------------*/
     printf("\nReady to listen!\n\n");
     flag = 1;
-    pause_flag = 0;
-    if (data_received == 0)
+    // pause_flag = 0;
+    // if (data_received == 0)
+    // {
+    
+    while (flag)
     {
-        while (flag)
+        // pthread_mutex_lock(&mutex);
+        memset(buffer, 0, sizeof(buffer));
+        if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL, 0)) < 0)
         {
-            if (pause_flag == 0)
-            {
-                memset(buffer, 0, sizeof(buffer));
-                if ((recieve_size = recvfrom(multi_sockfd, buffer, bit_rate, 0, NULL, 0)) < 0)
-                {
-                    perror("receiver: recvfrom()");
-                }
-                printf("DATA: %d\n", recieve_size);
-                fwrite(buffer, 1, recieve_size, mediaFile);
-                if (recieve_size < bit_rate)
-                {
-                    flag = 0;
-                }
-            }
+            perror("receiver: recvfrom()");
         }
-        recieving[((struct station_list *)input)->station_number] = 1;
+        printf("DATA: %d\n", recieve_size);
+        fwrite(buffer, 1, recieve_size, mediaFile);
+        if (recieve_size < bit_rate)
+        {
+            flag = 0;
+        }
+        // if(stop==1) {
+        //     // pthread_exit(&my_radio_channel);
+        //     break;
+        // }
     }
+    
+    // stop = 0;
+    // }
+    printf("Closing media file, data receiving finished\n");
     fclose(mediaFile);
+    // memset(buffer, 0, sizeof(buffer));
     close(multi_sockfd);
     printf("Successfully Received Channel Data!!");
 }
@@ -297,6 +305,7 @@ void choose_station(GtkWidget * clist, gint row, gint column,
     // gtk_clist_get_text(GTK_CLIST(clist), row, 2, &text);
     // g_print("IP address is %d\n\n", row);
 
+    
     pthread_t my_radio_channel;
     // struct args *station = (struct args *)malloc(sizeof(struct args));
     struct station_list *ind_station = (struct station_list *)malloc(sizeof(struct station_list));
@@ -317,22 +326,23 @@ void choose_station(GtkWidget * clist, gint row, gint column,
     printf("Bit rate : %d\n", ind_station->bit_rate);
     printf("Multicast address : %d\n", ind_station->multicast_address);
     printf("-----------------------------------------------------\n");
-    pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station);
+    printf("Received : %d\n",recieving[ind_station->station_number]);
+    char fname[20];
+    strcpy(fname,ind_station->station_name);
+    strcat(fname,".mp4");
+    recieving[ind_station->station_number]==0 ? pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station) : pthread_create(&my_radio_channel, NULL, on_open, (void *)fname);
+    // pthread_create(&my_radio_channel, NULL, play_channel, (void *)ind_station);
+    // pthread_join(my_radio_channel,NULL);
+    // printf("%ld\n",my_radio_channel);
 }
 
-void on_playpause(GtkWidget * widget, gpointer data)
-{
-    if (libvlc_media_player_is_playing(media_player) == 1)
-
-    {
-        pause_flag = 1;
+void on_playpause(GtkWidget * widget, gpointer data){
+    if (libvlc_media_player_is_playing(media_player) == 1){
+        // pause_flag = 1;
         pause_player();
     }
-
-    else
-
-    {
-        pause_flag = 0;
+    else{
+        // pause_flag = 0;
         flag = 0;
         pthread_t my_radio_channel;
         struct station_list *station = (struct station_list *)malloc(sizeof(struct station_list));
@@ -418,7 +428,7 @@ int main(int argc, gchar *argv[])
     // gtk_button_set_use_stock(GTK_BUTTON(playpause_button), TRUE);
     stop_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
     // g_signal_connect(playpause_button, "clicked", G_CALLBACK(on_playpause),NULL);
-    g_signal_connect(stop_button, "clicked", G_CALLBACK(on_stop), NULL);
+    g_signal_connect(stop_button, "clicked", G_CALLBACK(on_stop),NULL);
     hbuttonbox = gtk_hbutton_box_new();
     gtk_container_set_border_width(GTK_CONTAINER(hbuttonbox), BORDER_WIDTH);
     gtk_button_box_set_layout(GTK_BUTTON_BOX(hbuttonbox), GTK_BUTTONBOX_START);
