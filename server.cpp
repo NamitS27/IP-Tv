@@ -169,7 +169,7 @@ bool add_station(){
         const char *address = addr.c_str();
         int data_port = 7000+station_number;
         int info_port = 8010+station_number;
-        station new_station(station_number,"Station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
+        station new_station(station_number,"station"+to_string(station_number),inet_addr(address),data_port,info_port,BIT_RATE1);
         cout << new_station.video_duration << " " << new_station.video_filename << "\n";
         station_vec.push_back(new_station);
         v[station_number] = false;

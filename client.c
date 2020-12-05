@@ -78,7 +78,7 @@ void player_widget_on_realize(GtkWidget *widget, gpointer data) {
 
 void *on_open() {
     usleep(5000000);
-    open_media("file:///media/mrj35/Data/Academics/ICT-Sem5/CN_Lab/Project/Internet-Tv/videos/output.mp4");
+    open_media("file:///media/mrj35/Data/Academics/ICT-Sem5/CN_Lab/Project/Internet-Tv/output.mp4");
 }
 
 void open_media(const char *uri) {
@@ -271,7 +271,7 @@ void get_station_list(gpointer data){
     
     gtk_clist_clear((GtkCList *)data); 
 
-    char *send_data[infos.size][3];
+    char *send_data[infos.size][2];
     
     for (int i = 0; i < infos.size; i++){
         
@@ -290,7 +290,7 @@ void get_station_list(gpointer data){
         
         send_data[i][0] = sta_num;
         send_data[i][1] = infos.data[i].station_name;
-        send_data[i][2] = sta_add;
+        // send_data[i][2] = sta_add;
         
         gtk_clist_append((GtkCList *)data, send_data[i]);
     }
@@ -310,9 +310,9 @@ void get_station_list(gpointer data){
 void choose_station(GtkWidget *clist, gint row, gint column,
                     GdkEventButton *event, gpointer data) {
     // gtk_clist_get_text(GTK_CLIST(clist), row, column, &text);
-    gchar *text;
-    gtk_clist_get_text(GTK_CLIST(clist), row, 2, &text);
-    g_print("IP address is %d\n\n", row);
+    // gchar *text;
+    // gtk_clist_get_text(GTK_CLIST(clist), row, 2, &text);
+    // g_print("IP address is %d\n\n", row);
 
     pthread_t my_radio_channel;
     // struct args *station = (struct args *)malloc(sizeof(struct args));
@@ -367,7 +367,7 @@ int main(int argc, gchar *argv[]){
     GtkWidget *player_widget;
     GtkWidget *stop_button;
 
-    gchar *titles[3] = {"Channel No.", "Channel Name", "Channel Address"};
+    gchar *titles[2] = {"Channel No.", "Channel Name"};
 
     gtk_init(&argc, &argv);
 
@@ -389,11 +389,11 @@ int main(int argc, gchar *argv[]){
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
     gtk_widget_show(scrolled_window);
 
-    clist = gtk_clist_new_with_titles(3, titles);
+    clist = gtk_clist_new_with_titles(2, titles);
 
-    gtk_clist_set_column_width(GTK_CLIST(clist), 0, 380);
-    gtk_clist_set_column_width(GTK_CLIST(clist), 1, 380);
-    gtk_clist_set_column_width(GTK_CLIST(clist), 2, 380);
+    gtk_clist_set_column_width(GTK_CLIST(clist), 0, 450);
+    gtk_clist_set_column_width(GTK_CLIST(clist), 1, 450);
+    // gtk_clist_set_column_width(GTK_CLIST(clist), 2, 380);
 
     // gtk_clist_set_row_height(GTK_CLIST(clist),100);
 
@@ -426,15 +426,15 @@ int main(int argc, gchar *argv[]){
     player_widget = gtk_drawing_area_new();
     gtk_box_pack_start(GTK_BOX(vbox), player_widget, TRUE, TRUE, 0);
 
-    playpause_button = gtk_button_new_with_label("gtk-media-play");
-    gtk_button_set_use_stock(GTK_BUTTON(playpause_button), TRUE);
+    // playpause_button = gtk_button_new_with_label("gtk-media-play");
+    // gtk_button_set_use_stock(GTK_BUTTON(playpause_button), TRUE);
     stop_button = gtk_button_new_from_stock(GTK_STOCK_MEDIA_STOP);
-    g_signal_connect(playpause_button, "clicked", G_CALLBACK(on_playpause),NULL);
+    // g_signal_connect(playpause_button, "clicked", G_CALLBACK(on_playpause),NULL);
     g_signal_connect(stop_button, "clicked", G_CALLBACK(on_stop), NULL);
     hbuttonbox = gtk_hbutton_box_new();
     gtk_container_set_border_width(GTK_CONTAINER(hbuttonbox), BORDER_WIDTH);
     gtk_button_box_set_layout(GTK_BUTTON_BOX(hbuttonbox), GTK_BUTTONBOX_START);
-    gtk_box_pack_start(GTK_BOX(hbuttonbox), playpause_button, FALSE, FALSE, 0);
+    // gtk_box_pack_start(GTK_BOX(hbuttonbox), playpause_button, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbuttonbox), stop_button, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hbuttonbox, FALSE, FALSE, 0);
 
